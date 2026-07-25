@@ -1,6 +1,14 @@
 import { describe, expect, test } from "vitest";
 import { manaSymbols } from "./card-view";
-import { DEFAULT_SINCE, buildOrderBy, buildWhere, hasAnyFilter, titleCase } from "./cards";
+import {
+  DEFAULT_SINCE,
+  buildOrderBy,
+  buildWhere,
+  hasAnyFilter,
+  normalizeManaCost,
+  titleCase,
+  type CardFilters,
+} from "./cards";
 import { decodeState, encodeState, type BrowseState } from "./url-state";
 
 describe("buildWhere", () => {
@@ -40,7 +48,18 @@ describe("buildWhere", () => {
   });
 
   test("never emits a `not`-only where, which the engine rejects", () => {
-    const wheres = [{}, { name: "x" }, { colors: ["W"] }, { cmc: [3] }].map(buildWhere);
+    const cases: CardFilters[] = [
+      {},
+      { name: "x" },
+      { colors: ["W"] },
+      { cmc: [3] },
+      // NOT criteria are `not` riders, so on their own they leave nothing to prune with.
+      { not: ["reprint"] },
+      { not: ["reprint", "digital"] },
+      { stats: [{ field: "power", op: "not", value: "2" }] },
+    ];
+    const wheres = cases.map(buildWhere);
+
     for (const where of wheres) {
       const operators = Object.values(where).flatMap((filter) => Object.keys(filter ?? {}));
       expect(operators.length).toBeGreaterThan(0);
@@ -48,8 +67,127 @@ describe("buildWhere", () => {
     }
   });
 
+  test("keeps a NOT criterion once something else prunes", () => {
+    expect(buildWhere({ rarity: ["rare"], not: ["reprint"] })).toEqual({
+      rarity: { in: ["rare"] },
+      reprint: { not: true },
+    });
+  });
+
+  test("maps criteria onto their indexed booleans", () => {
+    expect(buildWhere({ is: ["reserved", "fullart"], not: ["digital"] })).toEqual({
+      reserved: { equals: true },
+      full_art: { equals: true },
+      digital: { not: true },
+    });
+  });
+
+  test("maps stat rows through the operators each field actually has", () => {
+    expect(
+      buildWhere({
+        stats: [
+          { field: "cmc", op: "equals", value: "3" },
+          { field: "power", op: "not", value: "*" },
+        ],
+      }),
+    ).toEqual({ cmc: { equals: 3 }, power: { not: "*" } });
+  });
+
+  test("uses the range operators the rebuild gave `cmc`", () => {
+    expect(buildWhere({ stats: [{ field: "cmc", op: "gte", value: "5" }] })).toEqual({
+      cmc: { gte: 5 },
+    });
+    expect(buildWhere({ stats: [{ field: "cmc", op: "lt", value: "2" }] })).toEqual({
+      cmc: { lt: 2 },
+    });
+  });
+
+  test("routes a comparison on a string stat to its derived numeric column", () => {
+    // power is printed text (`*`, `1+*`), so the build pairs it with power_num, derived by the
+    // `numeric` normalizer. The comparison goes there; the printed column can't answer it.
+    expect(buildWhere({ stats: [{ field: "power", op: "gte", value: "4" }] })).toEqual({
+      power_num: { gte: 4 },
+    });
+    expect(buildWhere({ stats: [{ field: "toughness", op: "lt", value: "2" }] })).toEqual({
+      toughness_num: { lt: 2 },
+    });
+  });
+
+  test("keeps equality on the printed column, so `= *` still means something", () => {
+    // 915 cards really are printed `*`. Sending that to the numeric column would match nothing,
+    // since a value with no numeric reading is absent there rather than zero.
+    expect(buildWhere({ stats: [{ field: "power", op: "equals", value: "*" }] })).toEqual({
+      power: { equals: "*" },
+    });
+    // `not` is a rider the engine refuses as a sole constraint, so it keeps company with the
+    // default window — same as every other criterion toggled to NOT.
+    expect(buildWhere({ stats: [{ field: "power", op: "not", value: "*" }] })).toEqual({
+      power: { not: "*" },
+      image_updated_at: { gte: DEFAULT_SINCE },
+    });
+  });
+
+  test("drops a comparison whose bound has no numeric reading", () => {
+    // "power greater than *" is not a question, so no clause is invented for it.
+    expect(buildWhere({ stats: [{ field: "power", op: "gte", value: "*" }] })).toEqual({
+      image_updated_at: { gte: DEFAULT_SINCE },
+    });
+  });
+
+  test("ignores stat rows with a blank or non-numeric value", () => {
+    expect(buildWhere({ stats: [{ field: "cmc", op: "equals", value: "  " }] })).toEqual({
+      image_updated_at: { gte: DEFAULT_SINCE },
+    });
+    expect(buildWhere({ stats: [{ field: "cmc", op: "equals", value: "abc" }] })).toEqual({
+      image_updated_at: { gte: DEFAULT_SINCE },
+    });
+  });
+
+  test("lets an explicit mana value row win over the sidebar's chips", () => {
+    // Both target `cmc` and the engine takes one filter per field.
+    expect(
+      buildWhere({ cmc: [1, 2], stats: [{ field: "cmc", op: "equals", value: "5" }] }),
+    ).toEqual({ cmc: { equals: 5 } });
+  });
+
+  test("compares mana cost whole, since the field has no `contains`", () => {
+    expect(buildWhere({ manaCost: "2ww" })).toEqual({ mana_cost: { equals: "{2}{W}{W}" } });
+  });
+
+  test("maps the remaining advanced text and enum filters", () => {
+    expect(
+      buildWhere({ flavor: "Kjeldoran", setName: "Bloomburrow", identity: ["G"], games: ["arena"], lang: "JA" }),
+    ).toEqual({
+      flavor_text: { contains: "Kjeldoran" },
+      set_name: { contains: "Bloomburrow" },
+      color_identity: { some: { in: ["G"] } },
+      games: { some: { in: ["arena"] } },
+      lang: { equals: "ja" },
+    });
+  });
+
+  test("drops colors and games that are not in the build's value set", () => {
+    expect(buildWhere({ colors: ["Q"], games: ["sega"] })).toEqual({
+      image_updated_at: { gte: DEFAULT_SINCE },
+    });
+  });
+
   test("drops the default window as soon as a real filter exists", () => {
     expect(buildWhere({ rarity: ["rare"] })).not.toHaveProperty("image_updated_at");
+  });
+});
+
+describe("normalizeManaCost", () => {
+  test("wraps bare symbols so `equals` can be used without typing braces", () => {
+    expect(normalizeManaCost("2ww")).toBe("{2}{W}{W}");
+  });
+
+  test("keeps multi-digit generic costs whole", () => {
+    expect(normalizeManaCost("10")).toBe("{10}");
+  });
+
+  test("passes braced input through, uppercased and unspaced", () => {
+    expect(normalizeManaCost(" {w/u}{r} ")).toBe("{W/U}{R}");
   });
 });
 
@@ -112,16 +250,54 @@ describe("url state", () => {
         type: "Instant",
         text: "damage",
         artist: "Guay",
+        flavor: "Kjeldoran",
+        manaCost: "{R}",
         set: "blb",
+        setName: "Bloomburrow",
         keyword: "Flying",
+        lang: "ja",
         colors: ["R"],
+        identity: ["R", "G"],
         rarity: ["rare", "mythic"],
         cmc: [1, 2],
+        games: ["paper", "arena"],
+        stats: [
+          { field: "power", op: "equals", value: "3" },
+          { field: "loyalty", op: "not", value: "4" },
+        ],
+        is: ["reserved", "fullart"],
+        not: ["digital"],
       },
       sort: "newest",
       page: 3,
     };
     expect(roundTrip(state)).toEqual(state);
+  });
+
+  test("drops stat rows, criteria and languages it does not recognise", () => {
+    const params = new URLSearchParams({
+      // In order: unknown field, unknown operator, an operator `startsWith` that no stat offers,
+      // blank value, then two that survive (power now supports gte via its derived column).
+      stats: "bogus:equals:1,cmc:sideways:2,power:startsWith:4,power:equals:,power:gte:4,cmc:gte:4",
+      is: "reserved,notacriterion",
+      lang: "elvish",
+    });
+    const { filters } = decodeState(params);
+    expect(filters.stats).toEqual([
+      { field: "power", op: "gte", value: "4" },
+      { field: "cmc", op: "gte", value: "4" },
+    ]);
+    expect(filters.is).toEqual(["reserved"]);
+    expect(filters.lang).toBeUndefined();
+  });
+
+  test("omits blank stat rows from the query string", () => {
+    const params = encodeState({
+      filters: { stats: [{ field: "cmc", op: "equals", value: "  " }] },
+      sort: "relevance",
+      page: 0,
+    });
+    expect(params.toString()).toBe("");
   });
 
   test("omits defaults from the query string", () => {

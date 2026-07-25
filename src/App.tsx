@@ -1,4 +1,5 @@
 import { HashRouter, Link, Route, Routes } from "react-router-dom";
+import { AdvancedSearch } from "./routes/AdvancedSearch";
 import { Browse } from "./routes/Browse";
 import { CardDetail } from "./routes/CardDetail";
 
@@ -13,18 +14,24 @@ function App() {
             <strong>shardfall</strong>
             <span>116,138 Magic cards, queried from static files</span>
           </Link>
-          <a
-            href="https://github.com/shivan2418/static-shard"
-            target="_blank"
-            rel="noreferrer"
-            className="link-button"
-          >
-            static-shard ↗
-          </a>
+          <nav className="app-nav">
+            <Link to="/advanced" className="link-button">
+              Advanced
+            </Link>
+            <a
+              href="https://github.com/shivan2418/static-shard"
+              target="_blank"
+              rel="noreferrer"
+              className="link-button"
+            >
+              static-shard ↗
+            </a>
+          </nav>
         </header>
 
         <Routes>
           <Route path="/" element={<Browse />} />
+          <Route path="/advanced" element={<AdvancedSearch />} />
           <Route path="/card/:id" element={<CardDetail />} />
           <Route path="*" element={<Browse />} />
         </Routes>

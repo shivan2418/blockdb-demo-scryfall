@@ -411,6 +411,33 @@
       "printed_type_line": {
         "kind": "string",
         "indexed": true
+      },
+      "power_num": {
+        "kind": "number",
+        "indexed": true,
+        "absent": true,
+        "derive": {
+          "from": "power",
+          "using": "numeric"
+        }
+      },
+      "toughness_num": {
+        "kind": "number",
+        "indexed": true,
+        "absent": true,
+        "derive": {
+          "from": "toughness",
+          "using": "numeric"
+        }
+      },
+      "loyalty_num": {
+        "kind": "number",
+        "indexed": true,
+        "absent": true,
+        "derive": {
+          "from": "loyalty",
+          "using": "numeric"
+        }
       }
     }
   },

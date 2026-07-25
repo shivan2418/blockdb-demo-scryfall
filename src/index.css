@@ -73,6 +73,12 @@ h2 {
   color: var(--muted);
 }
 
+.app-nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .app-footer {
   margin-top: auto;
   padding: 20px;
@@ -241,6 +247,315 @@ select:focus {
   border-color: #86c69a;
   color: #a8dcb9;
   background: rgba(134, 198, 154, 0.16);
+}
+
+/* ---------- advanced search ---------- */
+
+.advanced {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+
+.advanced-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.advanced-head h1 {
+  font-size: 26px;
+}
+
+/* One shared grid so every row's controls start on the same line. */
+.adv-row {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: 20px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+  align-items: start;
+}
+
+.adv-rows > .adv-row:first-child {
+  border-top: none;
+}
+
+.adv-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.adv-icon {
+  color: var(--accent);
+  font-size: 13px;
+  width: 14px;
+  text-align: center;
+}
+
+.adv-control {
+  min-width: 0;
+}
+
+/* The row wraps its controls in a fieldset purely to disable them in one place. */
+.adv-control fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.adv-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.adv-input,
+.adv-select {
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  width: auto;
+  min-width: 0;
+}
+
+/*
+ * The fieldset stacks its children, so a `flex` shorthand on these would set their HEIGHT.
+ * Sizing therefore splits by position: stacked children take a width, and only the ones
+ * inside a `.adv-line` row get flex factors.
+ */
+.adv-control fieldset > .adv-input {
+  width: 100%;
+}
+
+.adv-control fieldset > .adv-select {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.adv-line .adv-input {
+  flex: 1 1 260px;
+}
+
+.adv-line .adv-input-narrow {
+  flex: 0 1 170px;
+}
+
+.adv-symbol {
+  color: var(--muted);
+}
+
+.adv-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.adv-unavailable {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+}
+
+.adv-unavailable strong {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Disabled rows recede but stay readable — the reason under them is the point. */
+.adv-row-off .adv-label,
+.adv-row-off .adv-control fieldset {
+  opacity: 0.45;
+}
+
+.adv-row-off .adv-icon {
+  color: var(--muted);
+}
+
+.adv-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
+.adv-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.adv-check input {
+  width: auto;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.adv-check-off {
+  cursor: default;
+}
+
+.adv-check .pip {
+  min-width: 18px;
+  height: 18px;
+  font-size: 10px;
+}
+
+.adv-criteria {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.adv-criterion {
+  font: inherit;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 5px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.adv-criterion:hover {
+  border-color: var(--muted);
+}
+
+.adv-criterion-state {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: var(--border);
+  color: var(--muted);
+}
+
+.adv-criterion-is {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.adv-criterion-is .adv-criterion-state {
+  background: var(--accent);
+  color: #10131a;
+}
+
+.adv-criterion-not {
+  border-color: var(--danger);
+  background: rgba(240, 138, 138, 0.14);
+  color: var(--danger);
+}
+
+.adv-criterion-not .adv-criterion-state {
+  background: var(--danger);
+  color: #10131a;
+}
+
+/* An "off" criterion still shows the IS badge, greyed, so the control reads as a toggle. */
+.adv-criterion-off .adv-criterion-state {
+  opacity: 0.5;
+}
+
+.adv-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.adv-row-remove,
+.adv-add {
+  font: inherit;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.adv-row-remove {
+  width: 30px;
+  height: 34px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.adv-add {
+  align-self: flex-start;
+  font-size: 13px;
+  padding: 6px 12px;
+}
+
+.adv-row-remove:hover,
+.adv-add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.advanced-submit {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.adv-submit {
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.adv-submit:hover {
+  background: var(--accent);
+  color: #10131a;
+}
+
+.advanced-submit .adv-hint {
+  max-width: 60ch;
+}
+
+@media (max-width: 700px) {
+  .adv-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .adv-label {
+    padding-top: 0;
+  }
 }
 
 /* ---------- results ---------- */

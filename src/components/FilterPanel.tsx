@@ -1,4 +1,5 @@
 import type { CardFilters } from "../data/cards";
+import { toggleValue } from "./toggle";
 
 const COLORS = [
   { value: "W", label: "W", name: "White" },
@@ -10,15 +11,6 @@ const COLORS = [
 
 const RARITIES = ["common", "uncommon", "rare", "mythic"];
 const MANA_VALUES = [0, 1, 2, 3, 4, 5, 6, 7];
-
-/** Adds or removes one value from a multi-select filter. */
-function toggle<T>(values: T[] | undefined, value: T): T[] | undefined {
-  const current = values ?? [];
-  const next = current.includes(value)
-    ? current.filter((item) => item !== value)
-    : [...current, value];
-  return next.length ? next : undefined;
-}
 
 function ChipGroup<T extends string | number>({
   options,
@@ -109,7 +101,7 @@ export function FilterPanel({
           labelOf={(value) => COLORS.find((color) => color.value === value)?.label ?? value}
           titleOf={(value) => COLORS.find((color) => color.value === value)?.name ?? value}
           classOf={(value) => `chip-color chip-${value.toLowerCase()}`}
-          onToggle={(value) => patch({ colors: toggle(filters.colors, value) })}
+          onToggle={(value) => patch({ colors: toggleValue(filters.colors, value) })}
         />
         <p className="hint">Matches cards containing any selected color.</p>
       </section>
@@ -120,7 +112,7 @@ export function FilterPanel({
           options={RARITIES}
           selected={filters.rarity}
           labelOf={(value) => value[0]!.toUpperCase() + value.slice(1)}
-          onToggle={(value) => patch({ rarity: toggle(filters.rarity, value) })}
+          onToggle={(value) => patch({ rarity: toggleValue(filters.rarity, value) })}
         />
       </section>
 
@@ -130,7 +122,7 @@ export function FilterPanel({
           options={MANA_VALUES}
           selected={filters.cmc}
           labelOf={(value) => String(value)}
-          onToggle={(value) => patch({ cmc: toggle(filters.cmc, value) })}
+          onToggle={(value) => patch({ cmc: toggleValue(filters.cmc, value) })}
         />
       </section>
 

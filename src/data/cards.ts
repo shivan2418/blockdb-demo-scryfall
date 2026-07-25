@@ -4,6 +4,7 @@
  */
 import { ShardError, type OrderByOf, type WhereOf } from "static-shard";
 import { schema, type Schema } from "../shard-db/schema";
+import { numericColumnFor, statSupports, type CriterionId, type StatField, type StatOp } from "./advanced-fields";
 import type { Card } from "./card-view";
 import { cards } from "./client";
 import { COLLECTION } from "./collection";
@@ -20,6 +21,14 @@ const CARD_COLORS: readonly string[] = schema[COLLECTION].fields.colors.values;
 
 function knownColors(values: string[]): CardColor[] {
   return values.filter((value): value is CardColor => CARD_COLORS.includes(value));
+}
+
+/** Same guard for `games`, whose value set the build also closed. */
+type CardGame = CardMeta["fields"]["games"]["values"][number];
+const CARD_GAMES: readonly string[] = schema[COLLECTION].fields.games.values;
+
+function knownGames(values: string[]): CardGame[] {
+  return values.filter((value): value is CardGame => CARD_GAMES.includes(value));
 }
 
 /** Only indexed fields, each with only the operators the build actually made available. */
@@ -43,17 +52,37 @@ export const PAGE_SIZE = 60;
  */
 export const DEFAULT_SINCE = "2026-07-13T13:14:30Z";
 
+/** One row of the advanced form's Stats section. `value` stays a string — power holds `*`. */
+export interface StatFilter {
+  field: StatField;
+  op: StatOp;
+  value: string;
+}
+
 export interface CardFilters {
   name?: string;
   type?: string;
   text?: string;
   artist?: string;
+  flavor?: string;
+  /** Compared whole, not as a substring — `mana_cost` was indexed without `contains`. */
+  manaCost?: string;
   /** Matches cards containing ANY of these colors (one filter per field, implicit-AND only). */
   colors?: string[];
+  /** Colour identity, same any-of semantics as `colors`. */
+  identity?: string[];
   rarity?: string[];
   cmc?: number[];
   set?: string;
+  setName?: string;
   keyword?: string;
+  games?: string[];
+  lang?: string;
+  stats?: StatFilter[];
+  /** Criteria toggled to IS — each maps to one indexed boolean being true. */
+  is?: CriterionId[];
+  /** Criteria toggled to NOT. These are `not` riders and cannot prune on their own. */
+  not?: CriterionId[];
 }
 
 export type SortKey =
@@ -98,11 +127,105 @@ export function hasAnyFilter(filters: CardFilters): boolean {
       clean(filters.type) ||
       clean(filters.text) ||
       clean(filters.artist) ||
+      clean(filters.flavor) ||
+      clean(filters.manaCost) ||
       clean(filters.set) ||
+      clean(filters.setName) ||
       clean(filters.keyword) ||
+      clean(filters.lang) ||
       filters.colors?.length ||
+      filters.identity?.length ||
       filters.rarity?.length ||
-      filters.cmc?.length,
+      filters.cmc?.length ||
+      filters.games?.length ||
+      filters.stats?.some((stat) => clean(stat.value)) ||
+      filters.is?.length ||
+      filters.not?.length,
+  );
+}
+
+/**
+ * `"2WW"` → `"{2}{W}{W}"`, so the field's `equals` operator can be used without making the
+ * user type braces. Anything already braced is passed through uppercased.
+ */
+export function normalizeManaCost(value: string): string {
+  const compact = value.replace(/\s+/g, "").toUpperCase();
+  if (compact.includes("{")) return compact;
+  return (compact.match(/\d+|[A-Z/]/g) ?? []).map((token) => `{${token}}`).join("");
+}
+
+/**
+ * Each criterion writes one indexed boolean. Keys are literal so the generated `WhereOf`
+ * still checks every assignment, and the `Record<CriterionId, …>` makes the compiler
+ * complain if a criterion is added to the table without a clause here.
+ */
+const CRITERION_CLAUSES: Record<CriterionId, (where: DraftWhere, on: boolean) => void> = {
+  reserved: (where, on) => void (where.reserved = on ? { equals: true } : { not: true }),
+  promo: (where, on) => void (where.promo = on ? { equals: true } : { not: true }),
+  reprint: (where, on) => void (where.reprint = on ? { equals: true } : { not: true }),
+  variation: (where, on) => void (where.variation = on ? { equals: true } : { not: true }),
+  digital: (where, on) => void (where.digital = on ? { equals: true } : { not: true }),
+  oversized: (where, on) => void (where.oversized = on ? { equals: true } : { not: true }),
+  fullart: (where, on) => void (where.full_art = on ? { equals: true } : { not: true }),
+  textless: (where, on) => void (where.textless = on ? { equals: true } : { not: true }),
+  spotlight: (where, on) =>
+    void (where.story_spotlight = on ? { equals: true } : { not: true }),
+  booster: (where, on) => void (where.booster = on ? { equals: true } : { not: true }),
+  foil: (where, on) => void (where.foil = on ? { equals: true } : { not: true }),
+  nonfoil: (where, on) => void (where.nonfoil = on ? { equals: true } : { not: true }),
+  gamechanger: (where, on) =>
+    void (where.game_changer = on ? { equals: true } : { not: true }),
+  hires: (where, on) => void (where.highres_image = on ? { equals: true } : { not: true }),
+};
+
+const COMPARISONS = ["lt", "lte", "gt", "gte"] as const;
+const isComparison = (op: StatOp): op is (typeof COMPARISONS)[number] =>
+  (COMPARISONS as readonly string[]).includes(op);
+
+/** `{ gte: 5 }` etc. — one clause from an operator plus an already-parsed bound. */
+const numericClause = (op: StatOp, amount: number): Record<string, number> => ({ [op]: amount });
+
+/**
+ * `cmc` is a real number column, so every operator goes straight to it.
+ *
+ * Power, toughness and loyalty are printed as text (`*`, `1+*`, `∞`), so the build pairs each with
+ * a `_num` column derived by the `numeric` normalizer. Comparisons go to the number; equality stays
+ * on the printed string, which is the only way `= *` can mean anything. Cards whose printed value
+ * has no numeric reading are simply absent from the derived column, so they drop out of comparisons
+ * rather than being pinned to a fake 0.
+ */
+const STAT_CLAUSES: Record<StatField, (where: DraftWhere, op: StatOp, value: string) => void> = {
+  cmc: (where, op, value) => {
+    const amount = Number.parseFloat(value);
+    if (!Number.isFinite(amount)) return;
+    where.cmc = numericClause(op, amount) as DraftWhere["cmc"];
+  },
+  power: (where, op, value) => applyStat(where, "power", op, value),
+  toughness: (where, op, value) => applyStat(where, "toughness", op, value),
+  loyalty: (where, op, value) => applyStat(where, "loyalty", op, value),
+};
+
+function applyStat(where: DraftWhere, field: StatField, op: StatOp, value: string): void {
+  const draft = where as Record<string, unknown>;
+  if (!isComparison(op)) {
+    draft[field] = op === "not" ? { not: value } : { equals: value };
+    return;
+  }
+  const numeric = numericColumnFor(field);
+  const amount = Number.parseFloat(value);
+  // statSupports already hid comparisons when the build has no numeric column; a non-numeric bound
+  // ("compare power to *") has no meaning, so drop the clause rather than invent one.
+  if (numeric === undefined || !Number.isFinite(amount)) return;
+  draft[numeric] = numericClause(op, amount);
+}
+
+/**
+ * `not` is a rider: the engine rejects a where whose every clause is a `not`, because there
+ * would be nothing to prune shards with. Criteria toggled to NOT can produce exactly that.
+ */
+function prunes(where: DraftWhere): boolean {
+  return Object.values(where).some((filter) =>
+    Object.keys(filter ?? {}).some((operator) => operator !== "not"),
   );
 }
 
@@ -121,19 +244,52 @@ export function buildWhere(filters: CardFilters): CardWhere {
   const artist = clean(filters.artist);
   if (artist) where.artist = { contains: artist };
 
+  const flavor = clean(filters.flavor);
+  if (flavor) where.flavor_text = { contains: flavor };
+
+  const manaCost = clean(filters.manaCost);
+  if (manaCost) where.mana_cost = { equals: normalizeManaCost(manaCost) };
+
   const set = clean(filters.set);
   if (set) where.set = { equals: set.toLowerCase() };
+
+  const setName = clean(filters.setName);
+  if (setName) where.set_name = { contains: setName };
 
   const keyword = clean(filters.keyword);
   if (keyword) where.keywords = { some: keyword };
 
+  const lang = clean(filters.lang);
+  if (lang) where.lang = { equals: lang.toLowerCase() };
+
   const colors = filters.colors?.length ? knownColors(filters.colors) : [];
   if (colors.length) where.colors = { some: { in: colors } };
+
+  const identity = filters.identity?.length ? knownColors(filters.identity) : [];
+  if (identity.length) where.color_identity = { some: { in: identity } };
+
   if (filters.rarity?.length) where.rarity = { in: filters.rarity };
   if (filters.cmc?.length) where.cmc = { in: filters.cmc };
 
-  // Never leave the where empty — see DEFAULT_SINCE.
-  if (Object.keys(where).length === 0) where.image_updated_at = { gte: DEFAULT_SINCE };
+  const games = filters.games?.length ? knownGames(filters.games) : [];
+  if (games.length) where.games = { some: { in: games } };
+
+  for (const criterion of filters.is ?? []) CRITERION_CLAUSES[criterion](where, true);
+  for (const criterion of filters.not ?? []) CRITERION_CLAUSES[criterion](where, false);
+
+  // Last, so an explicit Mana Value row wins over the sidebar's mana-value chips — both
+  // target `cmc` and the engine takes one filter per field. Rows whose operator the field
+  // does not have are dropped rather than downgraded; the form disables those, so they only
+  // arrive from a hand-edited URL.
+  for (const stat of filters.stats ?? []) {
+    const value = clean(stat.value);
+    if (value && statSupports(stat.field, stat.op)) {
+      STAT_CLAUSES[stat.field](where, stat.op, value);
+    }
+  }
+
+  // Never leave the where unprunable — see DEFAULT_SINCE.
+  if (!prunes(where)) where.image_updated_at = { gte: DEFAULT_SINCE };
 
   return where;
 }
@@ -161,19 +317,21 @@ export function buildOrderBy(sort: SortKey): CardOrderBy | undefined {
   }
 }
 
+/** The `contains` filters — the case-sensitive ones, since the trigram index is not folded. */
+const TEXT_FILTERS = ["name", "type", "text", "artist", "flavor", "setName"] as const;
+
 /** Title-cases only the free-text filters, which are the case-sensitive ones. */
 function titleCaseFilters(filters: CardFilters): CardFilters {
-  return {
-    ...filters,
-    name: filters.name && titleCase(filters.name),
-    type: filters.type && titleCase(filters.type),
-    text: filters.text && titleCase(filters.text),
-    artist: filters.artist && titleCase(filters.artist),
-  };
+  const titleCased: CardFilters = { ...filters };
+  for (const key of TEXT_FILTERS) {
+    const value = filters[key];
+    if (value) titleCased[key] = titleCase(value);
+  }
+  return titleCased;
 }
 
 function hasTextFilter(filters: CardFilters): boolean {
-  return Boolean(clean(filters.name) || clean(filters.type) || clean(filters.text) || clean(filters.artist));
+  return TEXT_FILTERS.some((key) => clean(filters[key]));
 }
 
 export interface SearchResult {

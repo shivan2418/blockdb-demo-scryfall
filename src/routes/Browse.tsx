@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { CardGrid, GridSkeleton } from "../components/CardGrid";
 import { FilterPanel } from "../components/FilterPanel";
 import { Pagination } from "../components/Pagination";
@@ -70,6 +70,10 @@ export function Browse() {
               ))}
             </select>
           </label>
+          {/* Carries the current query across, so the form opens on this search rather than blank. */}
+          <Link to={`/advanced?${params.toString()}`} className="link-button">
+            Refine
+          </Link>
         </div>
 
         {!filtered && (

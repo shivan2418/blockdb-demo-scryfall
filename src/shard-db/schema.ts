@@ -93,6 +93,9 @@ export interface DefaultCards20260721211623 {
   color_indicator: string[];
   printed_text: string;
   printed_type_line: string;
+  power_num?: number;
+  toughness_num?: number;
+  loyalty_num?: number;
 }
 
 export interface Records {
@@ -177,6 +180,9 @@ export const schema = {
       color_indicator: { kind: "string", operators: ["equals", "in", "startsWith", "not"], multi: true, values: ["B", "G", "R", "U", "W"] },
       printed_text: { kind: "string", operators: ["equals", "in", "startsWith", "not"] },
       printed_type_line: { kind: "string", operators: ["equals", "in", "startsWith", "not"] },
+      power_num: { kind: "number", operators: ["equals", "in", "gt", "gte", "lt", "lte", "not"], absent: true },
+      toughness_num: { kind: "number", operators: ["equals", "in", "gt", "gte", "lt", "lte", "not"], absent: true },
+      loyalty_num: { kind: "number", operators: ["equals", "in", "gt", "gte", "lt", "lte", "not"], absent: true },
     },
   },
 } as const;
