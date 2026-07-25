@@ -3,12 +3,24 @@
  * here, so the components deal in plain filter objects.
  */
 import { ShardError, type OrderByOf, type WhereOf } from "static-shard";
-import type { Schema } from "../shard-db/schema";
+import { schema, type Schema } from "../shard-db/schema";
 import type { Card } from "./card-view";
 import { cards } from "./client";
 import { COLLECTION } from "./collection";
 
 type CardMeta = Schema[typeof COLLECTION];
+
+/**
+ * The build declares `colors` as a closed value set, so `in` accepts only those values. Filters
+ * arrive from the URL as free text, hence the guard — and it reads the permitted values off the
+ * generated schema rather than restating them, so a rebuild that widens the set widens this too.
+ */
+type CardColor = CardMeta["fields"]["colors"]["values"][number];
+const CARD_COLORS: readonly string[] = schema[COLLECTION].fields.colors.values;
+
+function knownColors(values: string[]): CardColor[] {
+  return values.filter((value): value is CardColor => CARD_COLORS.includes(value));
+}
 
 /** Only indexed fields, each with only the operators the build actually made available. */
 export type CardWhere = WhereOf<CardMeta>;
@@ -115,7 +127,8 @@ export function buildWhere(filters: CardFilters): CardWhere {
   const keyword = clean(filters.keyword);
   if (keyword) where.keywords = { some: keyword };
 
-  if (filters.colors?.length) where.colors = { some: { in: filters.colors } };
+  const colors = filters.colors?.length ? knownColors(filters.colors) : [];
+  if (colors.length) where.colors = { some: { in: colors } };
   if (filters.rarity?.length) where.rarity = { in: filters.rarity };
   if (filters.cmc?.length) where.cmc = { in: filters.cmc };
 
@@ -168,6 +181,18 @@ export interface SearchResult {
   hasMore: boolean;
   /** Set when the literal query found nothing and the title-cased retry did. */
   correctedCase: boolean;
+  /**
+   * The filters the returned records were actually fetched with — the title-cased set whenever
+   * `correctedCase`. Counting the caller's original filters instead would report 0 for exactly the
+   * queries the retry rescued, since the literal query is the one that matched nothing.
+   */
+  appliedFilters: CardFilters;
+  /**
+   * Exact match count, when the query already had to see every match — free, and vastly better than
+   * `count()`'s zero-fetch upper bound (which reads ~35,000 for an artist with 396 cards). Absent
+   * when the shard walk stopped as soon as the page was full, since the tail was never fetched.
+   */
+  total?: number;
 }
 
 export async function searchCards(
@@ -189,10 +214,13 @@ export async function searchCards(
     // case-normalized, so a lowercase query can't match Title Case card names.
     // Retry once, title-cased, before reporting no results.
     if (result.records.length === 0 && hasTextFilter(filters)) {
-      const retried = await run(titleCaseFilters(filters));
-      if (retried.records.length > 0) return { ...retried, correctedCase: true };
+      const titleCased = titleCaseFilters(filters);
+      const retried = await run(titleCased);
+      if (retried.records.length > 0) {
+        return { ...retried, correctedCase: true, appliedFilters: titleCased };
+      }
     }
-    return { ...result, correctedCase: false };
+    return { ...result, correctedCase: false, appliedFilters: filters };
   } catch (error) {
     throw friendlyError(error);
   }

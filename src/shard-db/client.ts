@@ -7,10 +7,15 @@ export interface Db {
 }
 
 const DEFAULT_BASE_PATH = "/shard-data";
+// This build pre-compressed the manifest. Everything else the manifest points at carries its
+// encoding in its own path, but the manifest is fetched before any of that can be read — so it is
+// stamped here, by the same build that wrote the file.
+const MANIFEST_COMPRESSION = "brotli" as const;
 
 export function connect(opts?: Partial<ClientOptions>): Db {
   const generic: GenericClient<Schema, Records> = createClient<Schema, Records>(schema, {
     basePath: DEFAULT_BASE_PATH,
+    manifestCompression: MANIFEST_COMPRESSION,
     ...opts,
   });
   return generic as unknown as Db;

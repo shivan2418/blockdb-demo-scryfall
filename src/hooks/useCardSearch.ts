@@ -49,12 +49,16 @@ export function useCardSearch(filters: CardFilters, sort: SortKey, page: number)
           records: result.records,
           hasMore: result.hasMore,
           correctedCase: result.correctedCase,
-          total: null,
-          totalExact: false,
+          // The query often already knew the exact total — show it immediately and skip count()
+          // entirely rather than replacing a true number with an inflated bound.
+          total: result.total ?? null,
+          totalExact: result.total !== undefined,
           error: null,
         });
+        if (result.total !== undefined) return;
 
-        const { count, exact } = await countCards(filters);
+        // The applied set, not `filters` — see SearchResult.appliedFilters.
+        const { count, exact } = await countCards(result.appliedFilters);
         if (superseded()) return;
         setState((prev) => ({ ...prev, total: count, totalExact: exact }));
       } catch (error) {
