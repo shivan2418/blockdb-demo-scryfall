@@ -1,0 +1,39 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+# Built shard tree — regenerate with `static-shard build`
+/public/shard-data/
+
+# Scryfall bulk source (532 MB) — build input, not a deploy artifact
+default-cards-*.jsonl
+
+# Locally cached card images (see scripts/fetch_card_images.py)
+/public/card-images/
+
+# Playwright MCP scratch output
+.playwright-mcp/
+*.jpeg
+*.png
+!public/favicon.svg
+scripts/failed-images.log

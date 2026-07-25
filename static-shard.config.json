@@ -1,0 +1,429 @@
+{
+  "$schema": "node_modules/static-shard-cli/config.schema.json",
+  "formatVersion": 0,
+  "collection": "default-cards-20260721211623",
+  "input": {
+    "path": "default-cards-20260721211623.jsonl"
+  },
+  "shardBytes": 1048576,
+  "schema": {
+    "sortField": "image_updated_at",
+    "pk": "id",
+    "fields": {
+      "object": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "id": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "oracle_id": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "multiverse_ids": {
+        "kind": "json"
+      },
+      "mtgo_id": {
+        "kind": "number",
+        "indexed": true
+      },
+      "arena_id": {
+        "kind": "number",
+        "indexed": true
+      },
+      "tcgplayer_id": {
+        "kind": "number",
+        "indexed": true
+      },
+      "cardmarket_id": {
+        "kind": "number",
+        "indexed": true
+      },
+      "name": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "lang": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "released_at": {
+        "kind": "date",
+        "indexed": true
+      },
+      "uri": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "scryfall_uri": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "layout": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "highres_image": {
+        "kind": "boolean",
+        "indexed": true
+      },
+      "image_status": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "image_updated_at": {
+        "kind": "date"
+      },
+      "image_uris": {
+        "kind": "json"
+      },
+      "mana_cost": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "cmc": {
+        "kind": "number",
+        "indexed": true
+      },
+      "type_line": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "oracle_text": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "colors": {
+        "kind": "string",
+        "indexed": true,
+        "multi": true
+      },
+      "color_identity": {
+        "kind": "string",
+        "indexed": true,
+        "multi": true
+      },
+      "keywords": {
+        "kind": "string",
+        "indexed": true,
+        "multi": true
+      },
+      "produced_mana": {
+        "kind": "string",
+        "indexed": true,
+        "multi": true
+      },
+      "all_parts": {
+        "kind": "json"
+      },
+      "legalities": {
+        "kind": "json"
+      },
+      "games": {
+        "kind": "string",
+        "indexed": true,
+        "multi": true
+      },
+      "reserved": {
+        "kind": "boolean",
+        "indexed": true
+      },
+      "game_changer": {
+        "kind": "boolean",
+        "indexed": true
+      },
+      "foil": {
+        "kind": "boolean",
+        "indexed": true
+      },
+      "nonfoil": {
+        "kind": "boolean",
+        "indexed": true
+      },
+      "finishes": {
+        "kind": "string",
+        "indexed": true,
+        "multi": true
+      },
+      "oversized": {
+        "kind": "boolean",
+        "indexed": true
+      },
+      "promo": {
+        "kind": "boolean",
+        "indexed": true
+      },
+      "reprint": {
+        "kind": "boolean",
+        "indexed": true
+      },
+      "variation": {
+        "kind": "boolean",
+        "indexed": true
+      },
+      "set_id": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "set": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "set_name": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "set_type": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "set_uri": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "set_search_uri": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "scryfall_set_uri": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "rulings_uri": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "prints_search_uri": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "collector_number": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "digital": {
+        "kind": "boolean",
+        "indexed": true
+      },
+      "rarity": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "card_back_id": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "artist": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "artist_ids": {
+        "kind": "string",
+        "indexed": true,
+        "multi": true
+      },
+      "illustration_id": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "border_color": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "frame": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "full_art": {
+        "kind": "boolean",
+        "indexed": true
+      },
+      "textless": {
+        "kind": "boolean",
+        "indexed": true
+      },
+      "booster": {
+        "kind": "boolean",
+        "indexed": true
+      },
+      "story_spotlight": {
+        "kind": "boolean",
+        "indexed": true
+      },
+      "prices": {
+        "kind": "json"
+      },
+      "related_uris": {
+        "kind": "json"
+      },
+      "purchase_uris": {
+        "kind": "json"
+      },
+      "mtgo_foil_id": {
+        "kind": "number",
+        "indexed": true
+      },
+      "power": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "toughness": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "flavor_text": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "edhrec_rank": {
+        "kind": "number",
+        "indexed": true
+      },
+      "penny_rank": {
+        "kind": "number",
+        "indexed": true
+      },
+      "promo_types": {
+        "kind": "string",
+        "indexed": true,
+        "multi": true
+      },
+      "security_stamp": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "card_faces": {
+        "kind": "json"
+      },
+      "preview": {
+        "kind": "json"
+      },
+      "watermark": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "frame_effects": {
+        "kind": "string",
+        "indexed": true,
+        "multi": true
+      },
+      "loyalty": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "printed_name": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "resource_id": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "tcgplayer_etched_id": {
+        "kind": "number",
+        "indexed": true
+      },
+      "flavor_name": {
+        "kind": "string",
+        "indexed": true,
+        "absent": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "attraction_lights": {
+        "kind": "json"
+      },
+      "color_indicator": {
+        "kind": "string",
+        "indexed": true,
+        "multi": true
+      },
+      "printed_text": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      },
+      "printed_type_line": {
+        "kind": "string",
+        "indexed": true,
+        "endsWith": true,
+        "contains": true
+      }
+    }
+  }
+}
