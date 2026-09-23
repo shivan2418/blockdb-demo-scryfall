@@ -96,6 +96,8 @@ unless you're rebuilding the data.
 
 The mana symbol table (`src/data/symbology.json`) is a snapshot of Scryfall's `/symbology` list.
 When new symbols come out, refresh it with `python3 scripts/fetch_symbology.py`.
+The keyword list (`src/data/keywords.json`) comes from the dump itself. It lets a keyword search
+ignore case, so regenerate it after each refresh with `python3 scripts/extract_keywords.py`.
 
 ## Deploying
 

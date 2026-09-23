@@ -228,6 +228,54 @@ describe("buildWhere", () => {
   });
 });
 
+describe("buildWhere rider fallbacks", () => {
+  test("treats a contains under three characters as a rider, as the engine does", () => {
+    // It has no trigrams to look up; without the name range findMany throws NEEDS_PRUNING.
+    expect(buildWhere({ name: "a" })).toEqual({
+      name_fold: { contains: "a" },
+      name: { startsWith: "" },
+    });
+    expect(buildWhere({ name: "ab" }, "newest")).toEqual({
+      name_fold: { contains: "ab" },
+      name: { startsWith: DEFAULT_WINDOW },
+    });
+    expect(buildWhere({ name: "abc" }, "newest")).toEqual({ name_fold: { contains: "abc" } });
+  });
+
+  test("narrows a boolean that occurs in every block under a non-name order", () => {
+    expect(usesDefaultWindow({ is: ["foil"] }, "newest")).toBe(true);
+    expect(buildWhere({ is: ["foil"] }, "newest")).toEqual({
+      foil: { equals: true },
+      name: { startsWith: DEFAULT_WINDOW },
+    });
+    // `reserved` is concentrated in old sets, so it still prunes.
+    expect(usesDefaultWindow({ is: ["reserved"] }, "newest")).toBe(false);
+  });
+});
+
+describe("free text and keywords", () => {
+  test("collapses runs of whitespace inside a search", () => {
+    expect(buildWhere({ name: "  lightning   bolt " })).toEqual({
+      name_fold: { contains: "lightning bolt" },
+    });
+  });
+
+  test("finds a keyword whatever its case", () => {
+    expect(buildWhere({ keyword: "flying" })).toEqual({ keywords: { some: "Flying" } });
+    expect(buildWhere({ keyword: "battle cry" })).toEqual({ keywords: { some: "Battle Cry" } });
+  });
+
+  test("matches every casing the data holds for one keyword", () => {
+    expect(buildWhere({ keyword: "family gathering" }).keywords).toEqual({
+      some: { in: ["Family gathering", "Family Gathering"] },
+    });
+  });
+
+  test("passes an unknown keyword through as typed", () => {
+    expect(buildWhere({ keyword: "Not A Keyword" })).toEqual({ keywords: { some: "Not A Keyword" } });
+  });
+});
+
 describe("normalizeManaCost", () => {
   test("wraps bare symbols so `equals` can be used without typing braces", () => {
     expect(normalizeManaCost("2ww")).toBe("{2}{W}{W}");
@@ -355,6 +403,13 @@ describe("url state", () => {
 
   test("omits defaults from the query string", () => {
     expect(encodeState({ filters: {}, sort: "relevance", page: 0 }).toString()).toBe("");
+  });
+
+  test("drops colour letters it does not recognise", () => {
+    const { filters } = decodeState(new URLSearchParams("colors=X,R&identity=Q"));
+    expect(filters.colors).toEqual(["R"]);
+    expect(filters.identity).toBeUndefined();
+    expect(hasAnyFilter(decodeState(new URLSearchParams("colors=X")).filters)).toBe(false);
   });
 
   test("ignores an unknown sort and a nonsense page", () => {

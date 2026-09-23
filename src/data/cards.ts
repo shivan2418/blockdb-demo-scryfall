@@ -8,6 +8,7 @@ import { numericColumnFor, statSupports, type CriterionId, type StatField, type 
 import type { Card } from "./card-view";
 import { cards } from "./client";
 import { COLLECTION } from "./collection";
+import KEYWORDS from "./keywords.json";
 
 type CardMeta = Schema[typeof COLLECTION];
 
@@ -159,6 +160,29 @@ const clean = (value: string | undefined): string | undefined => {
   return trimmed ? trimmed : undefined;
 };
 
+/**
+ * Free text for a `contains` filter: trimmed, and runs of whitespace collapsed, since card text never
+ * holds two spaces in a row and `lightning  bolt` should still find Lightning Bolt.
+ */
+const words = (value: string | undefined): string | undefined => clean(value)?.replace(/\s+/g, " ");
+
+/**
+ * Scryfall's keyword casing is inconsistent ("Flying", "Battle Cry", "Pick a Perk") and list elements
+ * compare exactly, so a typed keyword is looked up case-insensitively in the dump's own list
+ * (`scripts/extract_keywords.py`). One lowercase spelling can have several casings in the data.
+ */
+const KEYWORD_SPELLINGS = new Map<string, string[]>();
+for (const keyword of KEYWORDS) {
+  const key = keyword.toLowerCase();
+  KEYWORD_SPELLINGS.set(key, [...(KEYWORD_SPELLINGS.get(key) ?? []), keyword]);
+}
+
+function keywordClause(keyword: string): CardWhere["keywords"] {
+  const spellings = KEYWORD_SPELLINGS.get(keyword.toLowerCase());
+  if (!spellings) return { some: keyword };
+  return spellings.length === 1 ? { some: spellings[0] } : { some: { in: spellings } };
+}
+
 export function hasAnyFilter(filters: CardFilters): boolean {
   return Boolean(
     clean(filters.name) ||
@@ -258,14 +282,42 @@ function applyStat(where: DraftWhere, field: StatField, op: StatOp, value: strin
 }
 
 /**
- * `not` is a rider: the engine rejects a where whose every clause is a `not`, because there
- * would be nothing to prune blocks with. Criteria toggled to NOT can produce exactly that.
+ * Whether this where narrows the read. The engine rejects a where made only of riders (ADR-0013 in
+ * blockdb), and criteria toggled to NOT or a one-letter search can produce exactly that. Beyond the
+ * engine's own rule, this also counts as weak the filters that are legal but select from every block.
  */
 function prunes(where: DraftWhere): boolean {
-  return Object.values(where).some((filter) =>
-    Object.keys(filter ?? {}).some((operator) => !WEAK_OPERATORS.has(operator)),
+  return Object.entries(where).some(
+    ([field, filter]) =>
+      !FIELDS_IN_EVERY_BLOCK.has(field) &&
+      Object.entries(filter ?? {}).some(([operator, value]) => operatorPrunes(operator, value)),
   );
 }
+
+function operatorPrunes(operator: string, value: unknown): boolean {
+  if (WEAK_OPERATORS.has(operator)) return false;
+  // `contains` looks up the trigrams of its argument, and a shorter one has none, so the engine
+  // treats it as a rider.
+  return !(operator === "contains" && typeof value === "string" && value.length < MIN_TRIGRAM);
+}
+
+const MIN_TRIGRAM = 3;
+
+/**
+ * Indexed booleans whose values both occur in all 530 blocks (`blockdb build` warns that they
+ * "barely prune"). An IS on one of these is a legal pruning filter that still selects every block,
+ * so on its own under a non-name order it would download the whole dataset.
+ */
+const FIELDS_IN_EVERY_BLOCK = new Set([
+  "highres_image",
+  "foil",
+  "nonfoil",
+  "promo",
+  "reprint",
+  "digital",
+  "full_art",
+  "booster",
+]);
 
 /**
  * Operators that select from every block in this dataset. `not` is a rider by design; `isEmpty`
@@ -302,19 +354,19 @@ function filterClauses(filters: CardFilters): DraftWhere {
   const where: DraftWhere = {};
 
   // Free text goes to the folded columns, so matching ignores case and accents.
-  const name = clean(filters.name);
+  const name = words(filters.name);
   if (name) where.name_fold = { contains: fold(name) };
 
-  const type = clean(filters.type);
+  const type = words(filters.type);
   if (type) where.type_line_fold = { contains: fold(type) };
 
-  const text = clean(filters.text);
+  const text = words(filters.text);
   if (text) where.oracle_text_fold = { contains: fold(text) };
 
-  const artist = clean(filters.artist);
+  const artist = words(filters.artist);
   if (artist) where.artist_fold = { contains: fold(artist) };
 
-  const flavor = clean(filters.flavor);
+  const flavor = words(filters.flavor);
   if (flavor) where.flavor_text_fold = { contains: fold(flavor) };
 
   const manaCost = clean(filters.manaCost);
@@ -323,11 +375,11 @@ function filterClauses(filters: CardFilters): DraftWhere {
   const set = clean(filters.set);
   if (set) where.set = { equals: set.toLowerCase() };
 
-  const setName = clean(filters.setName);
+  const setName = words(filters.setName);
   if (setName) where.set_name_fold = { contains: fold(setName) };
 
   const keyword = clean(filters.keyword);
-  if (keyword) where.keywords = { some: keyword };
+  if (keyword) where.keywords = keywordClause(keyword);
 
   const lang = clean(filters.lang);
   if (lang) where.lang = { equals: lang.toLowerCase() };

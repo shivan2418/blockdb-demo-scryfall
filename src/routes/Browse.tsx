@@ -117,14 +117,30 @@ export function Browse() {
           </p>
         )}
 
-        <ResultSummary total={result.total} exact={result.totalExact} filtered={filtered} />
+        {result.status !== "error" && (
+          <ResultSummary total={result.total} exact={result.totalExact} filtered={filtered} />
+        )}
 
         {result.status === "error" && <p className="error">{result.error}</p>}
 
         {result.status === "loading" && <GridSkeleton />}
 
-        {result.status === "ready" && result.records.length === 0 && (
+        {result.status === "ready" && result.records.length === 0 && page === 0 && (
           <p className="empty">No cards matched. Try a broader search.</p>
+        )}
+
+        {/* Only reachable from a hand-edited or stale link: Pagination never offers a page past the end. */}
+        {result.status === "ready" && result.records.length === 0 && page > 0 && (
+          <p className="empty">
+            This page is past the last result.{" "}
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => commit({ filters, sort, page: 0 })}
+            >
+              Back to the first page
+            </button>
+          </p>
         )}
 
         {result.status === "ready" && result.records.length > 0 && (

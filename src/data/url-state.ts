@@ -43,6 +43,14 @@ const splitList = (value: string | null): string[] | undefined => {
  * `"cmc:gte:3,power:equals:2"` → stat rows, dropping anything the tables don't recognise,
  * including an operator the named field was not indexed with.
  */
+/** W/U/B/R/G and `C` (colorless); anything else from a hand-edited URL would filter nothing. */
+const COLOR_LETTERS = new Set(["W", "U", "B", "R", "G", "C"]);
+
+const splitColors = (value: string | null): string[] | undefined => {
+  const colors = splitList(value)?.filter((color) => COLOR_LETTERS.has(color));
+  return colors?.length ? colors : undefined;
+};
+
 function decodeStats(value: string | null): StatFilter[] | undefined {
   const rows = (splitList(value) ?? []).flatMap((entry) => {
     const [field, op, ...rest] = entry.split(":");
@@ -87,9 +95,9 @@ export function decodeState(params: URLSearchParams): BrowseState {
       setName: params.get("setname") ?? undefined,
       keyword: params.get("kw") ?? undefined,
       lang: lang && isLanguage(lang) ? lang : undefined,
-      colors: splitList(params.get("colors")),
+      colors: splitColors(params.get("colors")),
       colorMatch: isColorMatch(colorMatch) && colorMatch !== "any" ? colorMatch : undefined,
-      identity: splitList(params.get("identity")),
+      identity: splitColors(params.get("identity")),
       rarity: splitList(params.get("rarity")),
       cmc: cmc?.length ? cmc : undefined,
       games: splitList(params.get("games")),
