@@ -87,6 +87,10 @@ unless you're rebuilding the data.
    Update `COLLECTION` in `src/data/collection.ts` to match. The footer's "downloaded on" date is
    read from that key.
 3. Run `pnpm exec blockdb build`. This regenerates `public/blockdb/` and `src/blockdb/`.
+   If a newer dump adds fields that can be missing, the build stops with a schema-drift error
+   naming the field. Add `"absent": true` to that field in `blockdb.config.json` by hand. Don't
+   run `blockdb init --reinfer`: as of v0.2.0 it resets the sort field, the compression setting
+   and the `contains` opt-ins this config depends on.
 4. Commit and push. Each refresh adds about 59 MB to the git history.
 
 The mana symbol table (`src/data/symbology.json`) is a snapshot of Scryfall's `/symbology` list.
