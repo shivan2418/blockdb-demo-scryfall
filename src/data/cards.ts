@@ -57,6 +57,12 @@ export const DEFAULT_WINDOW = "A";
 export type ColorMatch = "any" | "exactly" | "including" | "atmost";
 export const COLOR_MATCHES: readonly ColorMatch[] = ["any", "exactly", "including", "atmost"];
 
+/**
+ * Picking red and white nearly always means "red-white cards", not "anything with red or white in
+ * it", so a colour selection without an explicit comparison means exactly those colours.
+ */
+export const DEFAULT_COLOR_MATCH: ColorMatch = "exactly";
+
 /** Colorless isn't a value in `colors` — it's the empty list, queried with `isEmpty`. */
 export const COLORLESS = "C";
 
@@ -104,7 +110,7 @@ export interface CardFilters {
   manaCost?: string;
   /** W/U/B/R/G, or `C` alone for colorless; compared per `colorMatch`. */
   colors?: string[];
-  /** How `colors` is compared. Absent means "any". */
+  /** How `colors` is compared. Absent means DEFAULT_COLOR_MATCH. */
   colorMatch?: ColorMatch;
   /**
    * Colour identity, Scryfall's commander semantics: cards that fit inside it, so colorless cards
@@ -391,7 +397,7 @@ function filterClauses(filters: CardFilters): DraftWhere {
   const lang = clean(filters.lang);
   if (lang) where.lang = { equals: lang.toLowerCase() };
 
-  const colors = colorFilter(filters.colors, filters.colorMatch);
+  const colors = colorFilter(filters.colors, filters.colorMatch ?? DEFAULT_COLOR_MATCH);
   if (colors) where.colors = colors;
 
   const identity = colorFilter(filters.identity, "atmost");

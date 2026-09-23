@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { CardFilters, ColorMatch } from "../data/cards";
+import { DEFAULT_COLOR_MATCH, type CardFilters, type ColorMatch } from "../data/cards";
 import { useDraftText } from "../hooks/useDraftText";
 import { ManaSymbol } from "./ManaSymbol";
 import { toggleValue } from "./toggle";
@@ -123,7 +123,7 @@ export function FilterPanel({
           classOf={(value) => `chip-color chip-${value.toLowerCase()}`}
           onToggle={(value) => patch({ colors: toggleValue(filters.colors, value) })}
         />
-        <p className="hint">{COLOR_MATCH_HINTS[filters.colorMatch ?? "any"]}</p>
+        <p className="hint">{COLOR_MATCH_HINTS[filters.colorMatch ?? DEFAULT_COLOR_MATCH]}</p>
       </section>
 
       <section className="filter-group">

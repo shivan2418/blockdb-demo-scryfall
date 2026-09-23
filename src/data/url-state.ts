@@ -15,6 +15,7 @@ import {
 } from "./advanced-fields";
 import {
   COLOR_MATCHES,
+  DEFAULT_COLOR_MATCH,
   SORT_LABELS,
   type CardFilters,
   type ColorMatch,
@@ -96,7 +97,8 @@ export function decodeState(params: URLSearchParams): BrowseState {
       keyword: params.get("kw") ?? undefined,
       lang: lang && isLanguage(lang) ? lang : undefined,
       colors: splitColors(params.get("colors")),
-      colorMatch: isColorMatch(colorMatch) && colorMatch !== "any" ? colorMatch : undefined,
+      colorMatch:
+        isColorMatch(colorMatch) && colorMatch !== DEFAULT_COLOR_MATCH ? colorMatch : undefined,
       identity: splitColors(params.get("identity")),
       rarity: splitList(params.get("rarity")),
       cmc: cmc?.length ? cmc : undefined,
@@ -133,7 +135,7 @@ export function encodeState(state: BrowseState): URLSearchParams {
   setText("kw", filters.keyword);
   setText("lang", filters.lang);
   setList("colors", filters.colors);
-  if (filters.colors?.length && filters.colorMatch && filters.colorMatch !== "any") {
+  if (filters.colors?.length && filters.colorMatch && filters.colorMatch !== DEFAULT_COLOR_MATCH) {
     params.set("cmatch", filters.colorMatch);
   }
   setList("identity", filters.identity);

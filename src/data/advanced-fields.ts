@@ -36,8 +36,8 @@ export const COLOR_OPTIONS: Option[] = [
 
 /** Scryfall's colour comparison, each one list operator on `colors` (see `colorFilter`). */
 export const COLOR_COMPARISONS: Option<ColorMatch>[] = [
-  { value: "any", label: "Any of these colors" },
   { value: "exactly", label: "Exactly these colors" },
+  { value: "any", label: "Any of these colors" },
   { value: "including", label: "Including these colors" },
   { value: "atmost", label: "At most these colors" },
 ];

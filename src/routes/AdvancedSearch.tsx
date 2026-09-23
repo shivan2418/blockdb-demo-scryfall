@@ -27,6 +27,7 @@ import {
 } from "../data/advanced-fields";
 import {
   COLORLESS,
+  DEFAULT_COLOR_MATCH,
   SORT_LABELS,
   type CardFilters,
   type ColorMatch,
@@ -193,9 +194,9 @@ export function AdvancedForm({
             <SelectField
               label="Color Comparison"
               options={COLOR_COMPARISONS}
-              value={filters.colorMatch ?? "any"}
+              value={filters.colorMatch ?? DEFAULT_COLOR_MATCH}
               onChange={(colorMatch: ColorMatch) =>
-                patch({ colorMatch: colorMatch === "any" ? undefined : colorMatch })
+                patch({ colorMatch: colorMatch === DEFAULT_COLOR_MATCH ? undefined : colorMatch })
               }
             />
           </ControlLine>

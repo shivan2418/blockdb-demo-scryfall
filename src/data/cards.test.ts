@@ -92,8 +92,13 @@ describe("buildWhere", () => {
     });
   });
 
-  test("maps multi-valued colors through some/in", () => {
-    expect(buildWhere({ colors: ["R", "G"] })).toEqual({ colors: { some: { in: ["R", "G"] } } });
+  test("compares a colour selection exactly unless told otherwise", () => {
+    expect(buildWhere({ colors: ["R", "G"] })).toEqual({
+      colors: { hasEvery: ["R", "G"], every: { in: ["R", "G"] } },
+    });
+    expect(buildWhere({ colors: ["R", "G"], colorMatch: "any" })).toEqual({
+      colors: { some: { in: ["R", "G"] } },
+    });
   });
 
   test("maps keyword to the some shorthand", () => {
@@ -382,7 +387,7 @@ describe("url state", () => {
         keyword: "Flying",
         lang: "ja",
         colors: ["R"],
-        colorMatch: "exactly",
+        colorMatch: "including",
         identity: ["R", "G"],
         rarity: ["rare", "mythic"],
         cmc: [1, 2],
@@ -428,6 +433,16 @@ describe("url state", () => {
 
   test("omits defaults from the query string", () => {
     expect(encodeState({ filters: {}, sort: "relevance", page: 0 }).toString()).toBe("");
+  });
+
+  test("writes the colour comparison only when it isn't the exact default", () => {
+    const encode = (colorMatch?: CardFilters["colorMatch"]) =>
+      encodeState({ filters: { colors: ["W", "U"], colorMatch }, sort: "relevance", page: 0 }).toString();
+    expect(encode()).toBe("colors=W%2CU");
+    expect(encode("exactly")).toBe("colors=W%2CU");
+    expect(encode("any")).toBe("colors=W%2CU&cmatch=any");
+    expect(decodeState(new URLSearchParams("colors=W,U&cmatch=any")).filters.colorMatch).toBe("any");
+    expect(decodeState(new URLSearchParams("colors=W,U&cmatch=exactly")).filters.colorMatch).toBeUndefined();
   });
 
   test("drops colour letters it does not recognise", () => {
