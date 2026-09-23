@@ -1,4 +1,5 @@
 import { HashRouter, Link, Route, Routes } from "react-router-dom";
+import { About } from "./routes/About";
 import { AdvancedSearch } from "./routes/AdvancedSearch";
 import { Browse } from "./routes/Browse";
 import { CardDetail } from "./routes/CardDetail";
@@ -25,6 +26,9 @@ function App() {
             <span>116,138 Magic cards, queried from static files</span>
           </Link>
           <nav className="app-nav">
+            <Link to="/about" className="link-button">
+              About
+            </Link>
             <a
               href="https://github.com/shivan2418/blockdb"
               target="_blank"
@@ -40,6 +44,7 @@ function App() {
           <Route path="/" element={<Browse />} />
           <Route path="/advanced" element={<AdvancedSearch />} />
           <Route path="/card/:id" element={<CardDetail />} />
+          <Route path="/about" element={<About />} />
           <Route path="*" element={<Browse />} />
         </Routes>
 

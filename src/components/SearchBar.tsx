@@ -1,11 +1,5 @@
-import { useEffect, useState } from "react";
+import { useDraftText } from "../hooks/useDraftText";
 
-const DEBOUNCE_MS = 250;
-
-/**
- * Keeps typing local and pushes upward on a debounce, so each keystroke doesn't
- * become a query. External changes (back button, cleared filters) flow back in.
- */
 export function SearchBar({
   value,
   onChange,
@@ -13,15 +7,7 @@ export function SearchBar({
   value: string;
   onChange: (value: string) => void;
 }) {
-  const [text, setText] = useState(value);
-
-  useEffect(() => setText(value), [value]);
-
-  useEffect(() => {
-    if (text === value) return;
-    const timer = setTimeout(() => onChange(text), DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [text]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [text, setText] = useDraftText(value, onChange);
 
   return (
     <div className="search-bar">

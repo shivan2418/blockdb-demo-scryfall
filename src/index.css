@@ -400,6 +400,48 @@ select:focus {
 
 /* ---------- advanced search ---------- */
 
+/* ---------- about ---------- */
+
+.about {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+  line-height: 1.6;
+}
+
+.about h1 {
+  font-size: 26px;
+  margin-bottom: 20px;
+}
+
+.about h2 {
+  font-size: 17px;
+  margin: 28px 0 8px;
+}
+
+.about p,
+.about li {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.about p {
+  margin: 0 0 12px;
+}
+
+.about ul {
+  margin: 0 0 28px;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.about a {
+  color: var(--accent);
+}
+
 .advanced {
   width: 100%;
   max-width: 880px;

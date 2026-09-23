@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { CardFilters, ColorMatch } from "../data/cards";
+import { useDraftText } from "../hooks/useDraftText";
 import { ManaSymbol } from "./ManaSymbol";
 import { toggleValue } from "./toggle";
 
@@ -69,15 +70,17 @@ function TextFilter({
   value: string | undefined;
   onChange: (value: string | undefined) => void;
 }) {
+  const [text, setText] = useDraftText(value ?? "", (next) => onChange(next || undefined));
+
   return (
     <label className="field">
       <span className="field-label">{label}</span>
       <input
         type="text"
-        value={value ?? ""}
+        value={text}
         placeholder={placeholder}
         autoComplete="off"
-        onChange={(event) => onChange(event.target.value || undefined)}
+        onChange={(event) => setText(event.target.value)}
       />
     </label>
   );
