@@ -334,11 +334,12 @@ export function buildWhere(filters: CardFilters, sort: SortKey = "relevance"): C
   const where = filterClauses(filters);
 
   // Nothing prunes. In block order an empty where is fine — the walk stops at the first page — but
-  // `not` riders can't stand alone, so they get an empty prefix: a sort-field range that admits every
-  // name. Any other order would read the whole dataset, so it's narrowed to DEFAULT_WINDOW.
+  // riders can't stand alone, so they get a sort-field range that admits every name. (`gte: ""`, since
+  // blockdb 0.5 no longer counts an empty `startsWith` as pruning.) Any other order would read the
+  // whole dataset, so it's narrowed to DEFAULT_WINDOW.
   if (!prunes(where)) {
     if (!followsBlockOrder(sort)) where.name = { startsWith: DEFAULT_WINDOW };
-    else if (Object.keys(where).length > 0) where.name = { startsWith: "" };
+    else if (Object.keys(where).length > 0) where.name = { gte: "" };
   }
 
   return where;

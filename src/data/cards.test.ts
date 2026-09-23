@@ -1,6 +1,8 @@
+import { wherePrunes } from "blockdb";
 import { describe, expect, test } from "vitest";
+import { schema } from "../blockdb/schema";
 import { manaSymbols } from "./card-view";
-import { datasetDate } from "./collection";
+import { COLLECTION, datasetDate } from "./collection";
 import {
   colorFilter,
   usesDefaultWindow,
@@ -45,7 +47,7 @@ describe("buildWhere", () => {
     // `every` can't prune alone here, so block order gets the admit-everything name range.
     expect(buildWhere({ identity: ["R", "G"] })).toEqual({
       color_identity: { every: { in: ["R", "G"] } },
-      name: { startsWith: "" },
+      name: { gte: "" },
     });
   });
 
@@ -186,7 +188,7 @@ describe("buildWhere", () => {
     // empty name prefix — same as every other criterion toggled to NOT.
     expect(buildWhere({ stats: [{ field: "power", op: "not", value: "*" }] })).toEqual({
       power: { not: "*" },
-      name: { startsWith: "" },
+      name: { gte: "" },
     });
   });
 
@@ -233,7 +235,7 @@ describe("buildWhere rider fallbacks", () => {
     // It has no trigrams to look up; without the name range findMany throws NEEDS_PRUNING.
     expect(buildWhere({ name: "a" })).toEqual({
       name_fold: { contains: "a" },
-      name: { startsWith: "" },
+      name: { gte: "" },
     });
     expect(buildWhere({ name: "ab" }, "newest")).toEqual({
       name_fold: { contains: "ab" },
@@ -250,6 +252,25 @@ describe("buildWhere rider fallbacks", () => {
     });
     // `reserved` is concentrated in old sets, so it still prunes.
     expect(usesDefaultWindow({ is: ["reserved"] }, "newest")).toBe(false);
+  });
+
+  test("every fallback is a where blockdb accepts", () => {
+    // Checked against the library's own rule, so a blockdb upgrade that tightens it fails here
+    // instead of as NEEDS_PRUNING in the browser.
+    const searches: CardFilters[] = [
+      { name: "a" },
+      { name: "ab" },
+      { not: ["foil"] },
+      { is: ["foil"] },
+      { colors: ["C"] },
+      { identity: ["R", "G"] },
+      { text: "x", not: ["promo", "digital"] },
+    ];
+    for (const filters of searches) {
+      for (const sort of ["relevance", "name", "name-desc", "newest", "cmc", "popular"] as const) {
+        expect(wherePrunes(buildWhere(filters, sort), schema[COLLECTION])).toBe(true);
+      }
+    }
   });
 });
 

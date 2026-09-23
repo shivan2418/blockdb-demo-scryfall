@@ -103,7 +103,7 @@ ignore case, so regenerate it after each refresh with `python3 scripts/extract_k
 
 Every push to `master` runs `.github/workflows/pages.yml`. It installs the dependencies, runs the
 tests, builds the site and publishes `dist/` to GitHub Pages. blockdb installs from its
-[v0.4.0 GitHub Release](https://github.com/shivan2418/blockdb/releases/tag/v0.4.0) tarballs.
+[v0.5.0 GitHub Release](https://github.com/shivan2418/blockdb/releases/tag/v0.5.0) tarballs.
 
 The blocks are gzipped rather than brotli-compressed on purpose. GitHub Pages serves both as raw
 bytes, so the browser has to decompress them itself, and Chrome can't decompress brotli natively
