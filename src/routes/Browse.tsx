@@ -1,11 +1,19 @@
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { CardGrid, GridSkeleton } from "../components/CardGrid";
 import { FilterPanel } from "../components/FilterPanel";
 import { Pagination } from "../components/Pagination";
 import { SearchBar } from "../components/SearchBar";
-import { SORT_LABELS, hasAnyFilter, type CardFilters, type SortKey } from "../data/cards";
+import {
+  DEFAULT_WINDOW,
+  SORT_LABELS,
+  followsShardOrder,
+  hasAnyFilter,
+  type CardFilters,
+  type SortKey,
+} from "../data/cards";
 import { decodeState, encodeState, type BrowseState } from "../data/url-state";
 import { useCardSearch } from "../hooks/useCardSearch";
+import { ADVANCED_PARAM, ADVANCED_VALUE, AdvancedForm } from "./AdvancedSearch";
 
 const SORT_KEYS = Object.keys(SORT_LABELS) as SortKey[];
 
@@ -34,7 +42,14 @@ export function Browse() {
   const state = decodeState(params);
   const { filters, sort, page } = state;
 
-  const commit = (next: BrowseState) => setParams(encodeState(next), { replace: false });
+  const advanced = params.get(ADVANCED_PARAM) === ADVANCED_VALUE;
+
+  const commit = (next: BrowseState, keepAdvanced = advanced) => {
+    const encoded = encodeState(next);
+    if (keepAdvanced) encoded.set(ADVANCED_PARAM, ADVANCED_VALUE);
+    setParams(encoded, { replace: false });
+  };
+  const setAdvanced = (open: boolean) => commit(state, open);
   const setFilters = (nextFilters: CardFilters) =>
     commit({ filters: nextFilters, sort, page: 0 });
 
@@ -42,12 +57,28 @@ export function Browse() {
   const filtered = hasAnyFilter(filters);
 
   return (
-    <div className="browse">
-      <FilterPanel
-        filters={filters}
-        onChange={setFilters}
-        onReset={() => commit({ filters: {}, sort: "relevance", page: 0 })}
-      />
+    <div className={`browse ${advanced ? "browse-advanced" : ""}`}>
+      {advanced ? (
+        <aside className="filters filters-advanced">
+          {/* Re-seeds the draft whenever the applied search changes, e.g. from the search bar. */}
+          <AdvancedForm
+            key={encodeState({ filters, sort, page: 0 }).toString()}
+            initialFilters={filters}
+            initialSort={sort}
+            onSubmit={(nextFilters, nextSort) =>
+              commit({ filters: nextFilters, sort: nextSort, page: 0 })
+            }
+            onClose={() => setAdvanced(false)}
+          />
+        </aside>
+      ) : (
+        <FilterPanel
+          filters={filters}
+          onChange={setFilters}
+          onReset={() => commit({ filters: {}, sort: "relevance", page: 0 })}
+          onAdvanced={() => setAdvanced(true)}
+        />
+      )}
 
       <main className="results">
         <div className="results-bar">
@@ -70,21 +101,18 @@ export function Browse() {
               ))}
             </select>
           </label>
-          {/* Carries the current query across, so the form opens on this search rather than blank. */}
-          <Link to={`/advanced?${params.toString()}`} className="link-button">
-            Refine
-          </Link>
+          {!advanced && (
+            <button type="button" className="link-button" onClick={() => setAdvanced(true)}>
+              Refine
+            </button>
+          )}
         </div>
 
-        {!filtered && (
+        {!filtered && !followsShardOrder(sort) && (
           <p className="notice">
-            Showing the most recently updated cards. Search or filter to query the full set of
-            116,138 — every result is fetched straight from static files.
+            Sorting all 116,138 cards this way would mean downloading every one, so this view is
+            limited to names starting with “{DEFAULT_WINDOW}”. Search or filter to sort the full set.
           </p>
-        )}
-
-        {result.correctedCase && (
-          <p className="notice">Matched using title case — card text is case-sensitive.</p>
         )}
 
         <ResultSummary total={result.total} exact={result.totalExact} filtered={filtered} />

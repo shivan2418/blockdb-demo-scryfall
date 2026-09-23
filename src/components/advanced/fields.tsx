@@ -1,5 +1,6 @@
 import type { Option } from "../../data/advanced-fields";
 import { MANA_SYMBOLS } from "../../data/advanced-fields";
+import { ManaSymbol } from "../ManaSymbol";
 
 export function TextField({
   label,
@@ -95,8 +96,8 @@ export function CheckGroup({
             onChange={() => onToggle(option.value)}
           />
           {pips && (
-            <span className={`pip pip-${option.value.toLowerCase()}`} aria-hidden="true">
-              {option.value}
+            <span className="pip" aria-hidden="true">
+              <ManaSymbol symbol={option.value} decorative />
             </span>
           )}
           <span>{option.label}</span>

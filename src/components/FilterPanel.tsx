@@ -1,12 +1,14 @@
+import type { ReactNode } from "react";
 import type { CardFilters } from "../data/cards";
+import { ManaSymbol } from "./ManaSymbol";
 import { toggleValue } from "./toggle";
 
 const COLORS = [
-  { value: "W", label: "W", name: "White" },
-  { value: "U", label: "U", name: "Blue" },
-  { value: "B", label: "B", name: "Black" },
-  { value: "R", label: "R", name: "Red" },
-  { value: "G", label: "G", name: "Green" },
+  { value: "W", name: "White" },
+  { value: "U", name: "Blue" },
+  { value: "B", name: "Black" },
+  { value: "R", name: "Red" },
+  { value: "G", name: "Green" },
 ];
 
 const RARITIES = ["common", "uncommon", "rare", "mythic"];
@@ -23,7 +25,7 @@ function ChipGroup<T extends string | number>({
   options: T[];
   selected: T[] | undefined;
   onToggle: (value: T) => void;
-  labelOf?: (value: T) => string;
+  labelOf?: (value: T) => ReactNode;
   titleOf?: (value: T) => string;
   classOf?: (value: T) => string;
 }) {
@@ -77,10 +79,12 @@ export function FilterPanel({
   filters,
   onChange,
   onReset,
+  onAdvanced,
 }: {
   filters: CardFilters;
   onChange: (filters: CardFilters) => void;
   onReset: () => void;
+  onAdvanced: () => void;
 }) {
   const patch = (changes: Partial<CardFilters>) => onChange({ ...filters, ...changes });
 
@@ -93,12 +97,17 @@ export function FilterPanel({
         </button>
       </div>
 
+      <button type="button" className="advanced-toggle" onClick={onAdvanced}>
+        Advanced search
+        <span>Text, types, stats, sets, artist and more →</span>
+      </button>
+
       <section className="filter-group">
         <span className="field-label">Colors</span>
         <ChipGroup
           options={COLORS.map((color) => color.value)}
           selected={filters.colors}
-          labelOf={(value) => COLORS.find((color) => color.value === value)?.label ?? value}
+          labelOf={(value) => <ManaSymbol symbol={value} decorative />}
           titleOf={(value) => COLORS.find((color) => color.value === value)?.name ?? value}
           classOf={(value) => `chip-color chip-${value.toLowerCase()}`}
           onToggle={(value) => patch({ colors: toggleValue(filters.colors, value) })}

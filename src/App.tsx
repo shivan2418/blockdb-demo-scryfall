@@ -1,5 +1,5 @@
-import { HashRouter, Link, Route, Routes } from "react-router-dom";
-import { AdvancedSearch } from "./routes/AdvancedSearch";
+import { HashRouter, Link, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
+import { ADVANCED_PARAM, ADVANCED_VALUE, AdvancedSearch } from "./routes/AdvancedSearch";
 import { Browse } from "./routes/Browse";
 import { CardDetail } from "./routes/CardDetail";
 import { datasetDate } from "./data/collection";
@@ -13,6 +13,19 @@ const DATASET_LABEL = datasetDate()?.toLocaleDateString("en-GB", {
   timeZone: "UTC",
 });
 
+/** Opens the advanced panel over the current search, or over a blank one from other pages. */
+function AdvancedLink() {
+  const { pathname } = useLocation();
+  const [params] = useSearchParams();
+  const next = new URLSearchParams(pathname === "/" ? params : undefined);
+  next.set(ADVANCED_PARAM, ADVANCED_VALUE);
+  return (
+    <Link to={`/?${next.toString()}`} className="link-button">
+      Advanced search
+    </Link>
+  );
+}
+
 function App() {
   return (
     // HashRouter keeps deep links working on GitHub Pages without a 404.html
@@ -25,9 +38,7 @@ function App() {
             <span>116,138 Magic cards, queried from static files</span>
           </Link>
           <nav className="app-nav">
-            <Link to="/advanced" className="link-button">
-              Advanced
-            </Link>
+            <AdvancedLink />
             <a
               href="https://github.com/shivan2418/static-shard"
               target="_blank"

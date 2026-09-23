@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ManaCost } from "../components/ManaCost";
+import { SymbolText } from "../components/ManaSymbol";
 import {
   faces,
   imageUrls,
@@ -61,7 +62,9 @@ function OracleText({ text }: { text: string | undefined }) {
   return (
     <div className="oracle">
       {text.split("\n").map((line, index) => (
-        <p key={index}>{line}</p>
+        <p key={index}>
+          <SymbolText text={line} />
+        </p>
       ))}
     </div>
   );

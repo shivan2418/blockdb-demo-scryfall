@@ -127,10 +127,91 @@ h2 {
   align-items: start;
 }
 
+/* The advanced form needs room for its label column, so the sidebar widens while it is open. */
+.browse-advanced {
+  grid-template-columns: minmax(0, 600px) minmax(0, 1fr);
+}
+
 @media (max-width: 900px) {
-  .browse {
+  .browse,
+  .browse-advanced {
     grid-template-columns: 1fr;
   }
+}
+
+.advanced-toggle {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.advanced-toggle span {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.advanced-toggle:hover {
+  background: var(--accent);
+  color: #10131a;
+}
+
+.advanced-toggle:hover span {
+  color: #10131a;
+}
+
+/* Scrolls on its own so the long form never pushes the results off screen. */
+.filters-advanced {
+  max-height: calc(100svh - 108px);
+  overflow-y: auto;
+  padding: 0 16px;
+}
+
+.filters-advanced .advanced {
+  max-width: none;
+  padding: 16px 0 0;
+}
+
+.filters-advanced .advanced-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 -16px;
+  padding: 0 16px 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.filters-advanced .adv-row {
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 14px;
+}
+
+.filters-advanced .advanced-submit {
+  margin-bottom: 16px;
+}
+
+.adv-search-now {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.advanced-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .filters {
@@ -229,8 +310,21 @@ select:focus {
 }
 
 .chip-color {
-  width: 34px;
-  font-weight: 700;
+  display: inline-grid;
+  place-items: center;
+  padding: 5px 8px;
+  opacity: 0.55;
+}
+
+.chip-color .mana-symbol {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+}
+
+.chip-color:hover,
+.chip-color.chip-on {
+  opacity: 1;
 }
 
 .chip-w.chip-on {
@@ -276,8 +370,8 @@ select:focus {
   margin-bottom: 18px;
 }
 
-.advanced-head h1 {
-  font-size: 26px;
+.advanced-head h2 {
+  font-size: 18px;
 }
 
 /* One shared grid so every row's controls start on the same line. */
@@ -428,10 +522,9 @@ select:focus {
   cursor: default;
 }
 
-.adv-check .pip {
-  min-width: 18px;
+.adv-check .pip .mana-symbol {
+  width: 18px;
   height: 18px;
-  font-size: 10px;
 }
 
 .adv-criteria {
@@ -717,44 +810,36 @@ select:focus {
   color: var(--muted);
 }
 
-/* ---------- mana pips ---------- */
+/* ---------- mana symbols ---------- */
 
 .mana-cost {
   display: inline-flex;
-  gap: 3px;
+  gap: 2px;
   vertical-align: middle;
 }
 
-.pip {
-  display: inline-grid;
-  place-items: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 4px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  background: #4a4f5a;
-  color: #10131a;
+.mana-symbol {
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: -0.15em;
+  margin: 0 1px;
 }
 
-.pip-generic {
-  background: #b9bec9;
+.mana-cost .mana-symbol {
+  width: 20px;
+  height: 20px;
+  margin: 0;
 }
-.pip-w {
-  background: #f4ecd4;
+
+.mana-symbol-missing {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
 }
-.pip-u {
-  background: #a7d0ef;
-}
-.pip-b {
-  background: #bbb1c7;
-}
-.pip-r {
-  background: #f2a696;
-}
-.pip-g {
-  background: #a6d9b6;
+
+/* Wraps a symbol where one sits beside a control, e.g. the colour checkboxes. */
+.pip {
+  display: inline-flex;
+  align-items: center;
 }
 
 /* ---------- detail ---------- */

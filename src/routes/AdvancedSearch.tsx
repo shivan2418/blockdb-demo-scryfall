@@ -5,11 +5,14 @@
  * cannot answer — Formats, Prices, Block, Lore Finder and several Preferences — render in
  * place, disabled, with the reason: the gaps are as informative as the fields that work.
  *
- * Editing is local. Nothing queries until submit, which encodes the draft into the browse
+ * It opens in place of the filter sidebar on the browse page rather than on a page of its
+ * own, so the results stay in view and there is nothing to navigate back from.
+ *
+ * Editing is local. Nothing queries until submit, which hands the draft to the browse
  * URL — so a half-filled form never fires a 40 MB shard walk.
  */
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { CriteriaPicker } from "../components/advanced/CriteriaPicker";
 import { ControlLine, FormRow } from "../components/advanced/FormRow";
 import { CheckGroup, SelectField, SymbolPicker, TextField } from "../components/advanced/fields";
@@ -53,13 +56,32 @@ const ICONS = {
   preferences: "⚙",
 };
 
+/** Old `/advanced` links open the panel on the browse page instead, keeping their query. */
 export function AdvancedSearch() {
-  const navigate = useNavigate();
   const [params] = useSearchParams();
-  // Seeded from the URL so "Refine this search" from the results page arrives filled in.
-  const initial = decodeState(params);
-  const [filters, setFilters] = useState<CardFilters>(initial.filters);
-  const [sort, setSort] = useState<SortKey>(initial.sort);
+  const next = encodeState(decodeState(params));
+  next.set(ADVANCED_PARAM, ADVANCED_VALUE);
+  return <Navigate to={`/?${next.toString()}`} replace />;
+}
+
+/** `?panel=advanced` on the browse URL, so Back closes the panel like any other step. */
+export const ADVANCED_PARAM = "panel";
+export const ADVANCED_VALUE = "advanced";
+
+export function AdvancedForm({
+  initialFilters,
+  initialSort,
+  onSubmit,
+  onClose,
+}: {
+  /** Seeded from the current search so the form opens filled in, not blank. */
+  initialFilters: CardFilters;
+  initialSort: SortKey;
+  onSubmit: (filters: CardFilters, sort: SortKey) => void;
+  onClose: () => void;
+}) {
+  const [filters, setFilters] = useState<CardFilters>(initialFilters);
+  const [sort, setSort] = useState<SortKey>(initialSort);
 
   const patch = (changes: Partial<CardFilters>) => setFilters({ ...filters, ...changes });
 
@@ -71,10 +93,7 @@ export function AdvancedSearch() {
         : { manaCost: `${filters.manaCost ?? ""}${symbol}` },
     );
 
-  const submit = () => {
-    const query = encodeState({ filters, sort, page: 0 }).toString();
-    navigate(query ? `/?${query}` : "/");
-  };
+  const submit = () => onSubmit(filters, sort);
 
   return (
     <form
@@ -85,17 +104,25 @@ export function AdvancedSearch() {
       }}
     >
       <div className="advanced-head">
-        <h1>Advanced Search</h1>
-        <button
-          type="button"
-          className="link-button"
-          onClick={() => {
-            setFilters({});
-            setSort("relevance");
-          }}
-        >
-          Clear form
-        </button>
+        <h2>Advanced search</h2>
+        <div className="advanced-head-actions">
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => {
+              setFilters({});
+              setSort("relevance");
+            }}
+          >
+            Clear form
+          </button>
+          <button type="button" className="link-button" onClick={onClose}>
+            ← Simple filters
+          </button>
+          <button type="submit" className="link-button adv-search-now">
+            Search
+          </button>
+        </div>
       </div>
 
       <div className="adv-rows">
@@ -111,7 +138,7 @@ export function AdvancedSearch() {
         <FormRow
           label="Text"
           icon={ICONS.text}
-          hint="Enter text that should appear in the rules box. Matched as a substring, so word order does matter — and matching is case-sensitive, though a failed search is retried in Title Case."
+          hint="Enter text that should appear in the rules box. Matched as a substring, ignoring case and accents, so word order does matter."
         >
           <ControlLine>
             <TextField
