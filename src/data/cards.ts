@@ -330,20 +330,31 @@ export function usesDefaultWindow(filters: CardFilters, sort: SortKey): boolean 
 export const followsBlockOrder = (sort: SortKey): boolean =>
   sort === "relevance" || sort === "name" || sort === "name-desc";
 
-export function buildWhere(filters: CardFilters, sort: SortKey = "relevance"): CardWhere {
-  const where = filterClauses(filters);
-
-  // Nothing prunes. In block order an empty where is fine — the walk stops at the first page — but
-  // riders can't stand alone, so they get a sort-field range that admits every name. (`gte: ""`, since
-  // blockdb 0.5 no longer counts an empty `startsWith` as pruning.) Any other order would read the
-  // whole dataset, so it's narrowed to DEFAULT_WINDOW.
-  if (!prunes(where)) {
-    if (!followsBlockOrder(sort)) where.name = { startsWith: DEFAULT_WINDOW };
-    else if (Object.keys(where).length > 0) where.name = { gte: "" };
-  }
-
-  return where;
+export interface CardQuery {
+  where: CardWhere;
+  /**
+   * Set when nothing in `where` prunes but the order matches the blocks': blockdb then walks the
+   * blocks in order and stops once the page is full, rather than rejecting a where of only riders.
+   */
+  scan: boolean;
 }
+
+export function buildQuery(filters: CardFilters, sort: SortKey = "relevance"): CardQuery {
+  const where = filterClauses(filters);
+  if (prunes(where)) return { where, scan: false };
+
+  // Nothing prunes. In block order the walk stops at the first page, so riders are cheap: an empty
+  // where needs nothing, and a rider-only one opts into the block-order scan. Any other order would
+  // read the whole dataset, so it's narrowed to DEFAULT_WINDOW.
+  if (!followsBlockOrder(sort)) {
+    where.name = { startsWith: DEFAULT_WINDOW };
+    return { where, scan: false };
+  }
+  return { where, scan: Object.keys(where).length > 0 };
+}
+
+export const buildWhere = (filters: CardFilters, sort: SortKey = "relevance"): CardWhere =>
+  buildQuery(filters, sort).where;
 
 /** The filters alone, before `buildWhere` adds any sort-field range to make the query prune. */
 function filterClauses(filters: CardFilters): DraftWhere {
@@ -449,12 +460,9 @@ export async function searchCards(
   page: number,
 ): Promise<SearchResult> {
   try {
-    return await cards.findMany({
-      where: buildWhere(filters, sort),
-      orderBy: buildOrderBy(sort),
-      limit: PAGE_SIZE,
-      offset: page * PAGE_SIZE,
-    });
+    const { where, scan } = buildQuery(filters, sort);
+    const args = { where, orderBy: buildOrderBy(sort), limit: PAGE_SIZE, offset: page * PAGE_SIZE };
+    return await (scan ? cards.findMany({ ...args, scan: "block-order" }) : cards.findMany(args));
   } catch (error) {
     throw friendlyError(error);
   }
@@ -465,6 +473,7 @@ export async function countCards(
   sort: SortKey,
 ): Promise<{ count: number; exact: boolean }> {
   try {
+    // count() reads no blocks, so it takes a rider-only where as is.
     return await cards.count(buildWhere(filters, sort));
   } catch (error) {
     throw friendlyError(error);

@@ -8,7 +8,9 @@ import {
   usesDefaultWindow,
   DEFAULT_WINDOW,
   buildOrderBy,
+  buildQuery,
   buildWhere,
+  followsBlockOrder,
   fold,
   hasAnyFilter,
   normalizeManaCost,
@@ -44,10 +46,10 @@ describe("colorFilter", () => {
 
 describe("buildWhere", () => {
   test("applies commander identity as at-most, so colorless cards fit every identity", () => {
-    // `every` can't prune alone here, so block order gets the admit-everything name range.
-    expect(buildWhere({ identity: ["R", "G"] })).toEqual({
-      color_identity: { every: { in: ["R", "G"] } },
-      name: { gte: "" },
+    // `every` can't prune alone here, so block order runs it as a block-order scan.
+    expect(buildQuery({ identity: ["R", "G"] })).toEqual({
+      where: { color_identity: { every: { in: ["R", "G"] } } },
+      scan: true,
     });
   });
 
@@ -109,7 +111,7 @@ describe("buildWhere", () => {
     expect(buildWhere({ set: "BLB" })).toEqual({ set: { equals: "blb" } });
   });
 
-  test("never emits a `not`-only where, which the engine rejects", () => {
+  test("runs a `not`-only where only as a block-order scan, since the engine rejects it otherwise", () => {
     const cases: CardFilters[] = [
       {},
       { name: "x" },
@@ -123,12 +125,14 @@ describe("buildWhere", () => {
       { not: ["reprint", "digital"] },
       { stats: [{ field: "power", op: "not", value: "2" }] },
     ];
-    const wheres = cases.flatMap((filters) => [buildWhere(filters, "name"), buildWhere(filters, "newest")]);
+    const queries = cases.flatMap((filters) => [buildQuery(filters, "name"), buildQuery(filters, "newest")]);
 
-    for (const where of wheres) {
-      // An empty where is fine; one made only of riders is what the engine refuses.
+    for (const { where, scan } of queries) {
+      // An empty where is fine; one made only of riders is what the engine refuses without a scan.
       const operators = Object.values(where).flatMap((filter) => Object.keys(filter ?? {}));
-      if (operators.length > 0) expect(operators.every((operator) => operator === "not")).toBe(false);
+      if (operators.length > 0 && operators.every((operator) => operator === "not")) {
+        expect(scan).toBe(true);
+      }
     }
   });
 
@@ -184,11 +188,11 @@ describe("buildWhere", () => {
     expect(buildWhere({ stats: [{ field: "power", op: "equals", value: "*" }] })).toEqual({
       power: { equals: "*" },
     });
-    // `not` is a rider the engine refuses as a sole constraint, so it keeps company with an
-    // empty name prefix — same as every other criterion toggled to NOT.
-    expect(buildWhere({ stats: [{ field: "power", op: "not", value: "*" }] })).toEqual({
-      power: { not: "*" },
-      name: { gte: "" },
+    // `not` is a rider the engine refuses as a sole constraint, so it runs as a block-order
+    // scan — same as every other criterion toggled to NOT.
+    expect(buildQuery({ stats: [{ field: "power", op: "not", value: "*" }] })).toEqual({
+      where: { power: { not: "*" } },
+      scan: true,
     });
   });
 
@@ -232,11 +236,8 @@ describe("buildWhere", () => {
 
 describe("buildWhere rider fallbacks", () => {
   test("treats a contains under three characters as a rider, as the engine does", () => {
-    // It has no trigrams to look up; without the name range findMany throws NEEDS_PRUNING.
-    expect(buildWhere({ name: "a" })).toEqual({
-      name_fold: { contains: "a" },
-      name: { gte: "" },
-    });
+    // It has no trigrams to look up; without the scan findMany throws NEEDS_PRUNING.
+    expect(buildQuery({ name: "a" })).toEqual({ where: { name_fold: { contains: "a" } }, scan: true });
     expect(buildWhere({ name: "ab" }, "newest")).toEqual({
       name_fold: { contains: "ab" },
       name: { startsWith: DEFAULT_WINDOW },
@@ -254,9 +255,10 @@ describe("buildWhere rider fallbacks", () => {
     expect(usesDefaultWindow({ is: ["reserved"] }, "newest")).toBe(false);
   });
 
-  test("every fallback is a where blockdb accepts", () => {
+  test("every fallback is a query blockdb accepts", () => {
     // Checked against the library's own rule, so a blockdb upgrade that tightens it fails here
-    // instead of as NEEDS_PRUNING in the browser.
+    // instead of as NEEDS_PRUNING in the browser. A scan is exempt from the rule but only valid in
+    // block order, which is the other half of what findMany checks.
     const searches: CardFilters[] = [
       { name: "a" },
       { name: "ab" },
@@ -268,7 +270,9 @@ describe("buildWhere rider fallbacks", () => {
     ];
     for (const filters of searches) {
       for (const sort of ["relevance", "name", "name-desc", "newest", "cmc", "popular"] as const) {
-        expect(wherePrunes(buildWhere(filters, sort), schema[COLLECTION])).toBe(true);
+        const { where, scan } = buildQuery(filters, sort);
+        if (scan) expect(followsBlockOrder(sort)).toBe(true);
+        else expect(wherePrunes(where, schema[COLLECTION])).toBe(true);
       }
     }
   });
