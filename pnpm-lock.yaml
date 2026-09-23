@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      blockdb:
+        specifier: link:/home/emil/Programming/blockdb/packages/blockdb
+        version: link:../blockdb/packages/blockdb
       react:
         specifier: ^19.2.7
         version: 19.2.8
@@ -17,9 +20,6 @@ importers:
       react-router-dom:
         specifier: ^7.18.1
         version: 7.18.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      static-shard:
-        specifier: link:/home/emil/Programming/static-shard/packages/static-shard
-        version: link:../static-shard/packages/static-shard
     devDependencies:
       '@types/node':
         specifier: ^24.13.2
@@ -33,12 +33,12 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^6.0.3
         version: 6.0.4(vite@8.1.5(@types/node@24.13.3))
+      blockdb-cli:
+        specifier: link:/home/emil/Programming/blockdb/packages/blockdb-cli
+        version: link:../blockdb/packages/blockdb-cli
       oxlint:
         specifier: ^1.71.0
         version: 1.75.0
-      static-shard-cli:
-        specifier: link:/home/emil/Programming/static-shard/packages/static-shard-cli
-        version: link:../static-shard/packages/static-shard-cli
       typescript:
         specifier: ~6.0.2
         version: 6.0.3

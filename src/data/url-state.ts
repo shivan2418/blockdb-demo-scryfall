@@ -13,7 +13,14 @@ import {
   statSupports,
   type CriterionId,
 } from "./advanced-fields";
-import { SORT_LABELS, type CardFilters, type SortKey, type StatFilter } from "./cards";
+import {
+  COLOR_MATCHES,
+  SORT_LABELS,
+  type CardFilters,
+  type ColorMatch,
+  type SortKey,
+  type StatFilter,
+} from "./cards";
 
 export interface BrowseState {
   filters: CardFilters;
@@ -24,6 +31,8 @@ export interface BrowseState {
 export const EMPTY_STATE: BrowseState = { filters: {}, sort: "relevance", page: 0 };
 
 const isSortKey = (value: string): value is SortKey => value in SORT_LABELS;
+const isColorMatch = (value: string): value is ColorMatch =>
+  (COLOR_MATCHES as readonly string[]).includes(value);
 
 const splitList = (value: string | null): string[] | undefined => {
   const parts = value?.split(",").filter(Boolean);
@@ -64,6 +73,7 @@ export function decodeState(params: URLSearchParams): BrowseState {
     ?.map((value) => Number.parseInt(value, 10))
     .filter((value) => Number.isFinite(value));
   const lang = params.get("lang") ?? undefined;
+  const colorMatch = params.get("cmatch") ?? "";
 
   return {
     filters: {
@@ -78,6 +88,7 @@ export function decodeState(params: URLSearchParams): BrowseState {
       keyword: params.get("kw") ?? undefined,
       lang: lang && isLanguage(lang) ? lang : undefined,
       colors: splitList(params.get("colors")),
+      colorMatch: isColorMatch(colorMatch) && colorMatch !== "any" ? colorMatch : undefined,
       identity: splitList(params.get("identity")),
       rarity: splitList(params.get("rarity")),
       cmc: cmc?.length ? cmc : undefined,
@@ -114,6 +125,9 @@ export function encodeState(state: BrowseState): URLSearchParams {
   setText("kw", filters.keyword);
   setText("lang", filters.lang);
   setList("colors", filters.colors);
+  if (filters.colors?.length && filters.colorMatch && filters.colorMatch !== "any") {
+    params.set("cmatch", filters.colorMatch);
+  }
   setList("identity", filters.identity);
   setList("rarity", filters.rarity);
   setList("cmc", filters.cmc);

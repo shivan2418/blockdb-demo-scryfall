@@ -1,5 +1,5 @@
 /**
- * Scryfall's advanced search page, section for section, over static-shard.
+ * Scryfall's advanced search page, section for section, over blockdb.
  *
  * The section order, labels and hint wording follow scryfall.com/advanced. Rows this build
  * cannot answer — Formats, Prices, Block, Lore Finder and several Preferences — render in
@@ -9,7 +9,7 @@
  * own, so the results stay in view and there is nothing to navigate back from.
  *
  * Editing is local. Nothing queries until submit, which hands the draft to the browse
- * URL — so a half-filled form never fires a 40 MB shard walk.
+ * URL — so a half-filled form never fires a 40 MB block walk.
  */
 import { useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
@@ -26,7 +26,13 @@ import {
   RARITY_OPTIONS,
   UNSUPPORTED_SECTIONS,
 } from "../data/advanced-fields";
-import { SORT_LABELS, type CardFilters, type SortKey } from "../data/cards";
+import {
+  COLORLESS,
+  SORT_LABELS,
+  type CardFilters,
+  type ColorMatch,
+  type SortKey,
+} from "../data/cards";
 import { decodeState, encodeState } from "../data/url-state";
 
 const SORT_OPTIONS = (Object.keys(SORT_LABELS) as SortKey[]).map((key) => ({
@@ -55,6 +61,17 @@ const ICONS = {
   language: "⁂",
   preferences: "⚙",
 };
+
+/**
+ * Colorless is the empty list, so it can't sit beside a colour in one filter: picking it clears
+ * the colours, and picking a colour clears it.
+ */
+function toggleColor(selected: string[] | undefined, value: string): string[] | undefined {
+  const compatible = selected?.filter((color) =>
+    value === COLORLESS ? color === COLORLESS : color !== COLORLESS,
+  );
+  return toggleValue(compatible?.length ? compatible : undefined, value);
+}
 
 /** Old `/advanced` links open the panel on the browse page instead, keeping their query. */
 export function AdvancedSearch() {
@@ -167,21 +184,23 @@ export function AdvancedForm({
         <FormRow
           label="Colors"
           icon={ICONS.colors}
-          hint="Matches cards containing any of the colours you select. Colourless and the other comparisons need several filters on one field, which the engine does not allow."
+          hint="Choose how the colours you pick are compared. Colorless can't be combined with colours; “At most” already includes colorless cards."
         >
           <CheckGroup
             legend="Card colors"
             options={COLOR_OPTIONS}
             selected={filters.colors}
             pips
-            onToggle={(value) => patch({ colors: toggleValue(filters.colors, value) })}
+            onToggle={(value) => patch({ colors: toggleColor(filters.colors, value) })}
           />
           <ControlLine>
             <SelectField
               label="Color Comparison"
               options={COLOR_COMPARISONS}
-              value="any"
-              onChange={() => undefined}
+              value={filters.colorMatch ?? "any"}
+              onChange={(colorMatch: ColorMatch) =>
+                patch({ colorMatch: colorMatch === "any" ? undefined : colorMatch })
+              }
             />
           </ControlLine>
         </FormRow>
@@ -189,14 +208,14 @@ export function AdvancedForm({
         <FormRow
           label="Commander"
           icon={ICONS.commander}
-          hint="Colour identity, matched the same way — any of the colours you select. Scryfall’s version returns only cards that fit inside the identity, which would need the “at most” comparison above."
+          hint="Cards whose colour identity fits inside the colours you select, so they can go in that commander’s deck. Colorless cards fit every identity; pick Colorless alone to find only those."
         >
           <CheckGroup
             legend="Commander colors"
             options={COLOR_OPTIONS}
             selected={filters.identity}
             pips
-            onToggle={(value) => patch({ identity: toggleValue(filters.identity, value) })}
+            onToggle={(value) => patch({ identity: toggleColor(filters.identity, value) })}
           />
         </FormRow>
 
@@ -373,7 +392,7 @@ export function AdvancedForm({
         <FormRow
           label="Language"
           icon={ICONS.language}
-          hint="Specify a printed language. Scryfall defaults to English; this defaults to any, because English alone is 113,494 of the 116,138 records and would fetch nearly every shard."
+          hint="Specify a printed language. Scryfall defaults to English; this defaults to any, because English alone is 113,494 of the 116,138 records and would fetch nearly every block."
         >
           <SelectField
             label="Language"
@@ -442,7 +461,7 @@ export function AdvancedForm({
           Search with these options
         </button>
         <p className="adv-hint">
-          A query fetches every shard it touches, whole. Narrow searches are cheap; a single
+          A query fetches every block it touches, whole. Narrow searches are cheap; a single
           broad filter can pull tens of megabytes.
         </p>
       </div>

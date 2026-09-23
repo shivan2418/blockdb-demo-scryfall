@@ -2,6 +2,8 @@ import { describe, expect, test } from "vitest";
 import { manaSymbols } from "./card-view";
 import { datasetDate } from "./collection";
 import {
+  colorFilter,
+  usesDefaultWindow,
   DEFAULT_WINDOW,
   buildOrderBy,
   buildWhere,
@@ -12,15 +14,59 @@ import {
 } from "./cards";
 import { decodeState, encodeState, type BrowseState } from "./url-state";
 
+describe("colorFilter", () => {
+  test("maps each Scryfall comparison to its list operator", () => {
+    expect(colorFilter(["W", "U"])).toEqual({ some: { in: ["W", "U"] } });
+    expect(colorFilter(["W", "U"], "including")).toEqual({ hasEvery: ["W", "U"] });
+    expect(colorFilter(["W", "U"], "atmost")).toEqual({ every: { in: ["W", "U"] } });
+    expect(colorFilter(["W", "U"], "exactly")).toEqual({
+      hasEvery: ["W", "U"],
+      every: { in: ["W", "U"] },
+    });
+  });
+
+  test("reads colorless as the empty list, whatever the comparison", () => {
+    expect(colorFilter(["C"])).toEqual({ isEmpty: true });
+    expect(colorFilter(["C"], "including")).toEqual({ isEmpty: true });
+  });
+
+  test("lets colours win over colorless when a URL carries both", () => {
+    expect(colorFilter(["C", "R"])).toEqual({ some: { in: ["R"] } });
+  });
+
+  test("is undefined for nothing, or only unknown values", () => {
+    expect(colorFilter(undefined)).toBeUndefined();
+    expect(colorFilter(["Q"])).toBeUndefined();
+  });
+});
+
 describe("buildWhere", () => {
-  test("leaves an unfiltered browse in shard order empty — the walk stops at the first page", () => {
+  test("applies commander identity as at-most, so colorless cards fit every identity", () => {
+    // `every` can't prune alone here, so block order gets the admit-everything name range.
+    expect(buildWhere({ identity: ["R", "G"] })).toEqual({
+      color_identity: { every: { in: ["R", "G"] } },
+      name: { startsWith: "" },
+    });
+  });
+
+  test("narrows colorless under a non-name order, since isEmpty can't prune here", () => {
+    expect(usesDefaultWindow({ colors: ["C"] }, "newest")).toBe(true);
+    expect(usesDefaultWindow({ colors: ["C"] }, "name")).toBe(false);
+    expect(usesDefaultWindow({ colors: ["C"], rarity: ["mythic"] }, "newest")).toBe(false);
+    expect(buildWhere({ colors: ["C"] }, "newest")).toEqual({
+      colors: { isEmpty: true },
+      name: { startsWith: DEFAULT_WINDOW },
+    });
+  });
+
+  test("leaves an unfiltered browse in block order empty — the walk stops at the first page", () => {
     expect(buildWhere({})).toEqual({});
     expect(buildWhere({}, "name")).toEqual({});
     expect(buildWhere({}, "name-desc")).toEqual({});
   });
 
   test("narrows an unfiltered browse to the default window under any other order", () => {
-    // Without this, sorting by anything but name would download every shard.
+    // Without this, sorting by anything but name would download every block.
     for (const sort of ["newest", "oldest", "cmc", "cmc-desc", "popular"] as const) {
       expect(buildWhere({}, sort)).toEqual({ name: { startsWith: DEFAULT_WINDOW } });
     }
@@ -69,6 +115,9 @@ describe("buildWhere", () => {
       { cmc: [3] },
       // NOT criteria are `not` riders, so on their own they leave nothing to prune with.
       { not: ["reprint"] },
+      // So are isEmpty and every here: colorless cards sit in every block.
+      { colors: ["C"] },
+      { colors: ["W", "U"], colorMatch: "atmost" },
       { not: ["reprint", "digital"] },
       { stats: [{ field: "power", op: "not", value: "2" }] },
     ];
@@ -168,7 +217,7 @@ describe("buildWhere", () => {
     ).toEqual({
       flavor_text_fold: { contains: "kjeldoran" },
       set_name_fold: { contains: "bloomburrow" },
-      color_identity: { some: { in: ["G"] } },
+      color_identity: { every: { in: ["G"] } },
       games: { some: { in: ["arena"] } },
       lang: { equals: "ja" },
     });
@@ -260,6 +309,7 @@ describe("url state", () => {
         keyword: "Flying",
         lang: "ja",
         colors: ["R"],
+        colorMatch: "exactly",
         identity: ["R", "G"],
         rarity: ["rare", "mythic"],
         cmc: [1, 2],

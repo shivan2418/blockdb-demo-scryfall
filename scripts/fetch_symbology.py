@@ -16,7 +16,7 @@ from pathlib import Path
 
 URL = "https://api.scryfall.com/symbology"
 OUT = Path("src/data/symbology.json")
-USER_AGENT = "shardfall-demo/0.1 (static-shard proof of concept)"
+USER_AGENT = "shardfall-demo/0.1 (blockdb proof of concept)"
 
 
 def main() -> None:

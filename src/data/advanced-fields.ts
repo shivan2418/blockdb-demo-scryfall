@@ -10,7 +10,8 @@
  * Enum values were read off the dataset itself rather than guessed — `dw` for Dwarvish,
  * not `dwa`.
  */
-import { schema } from "../shard-db/schema";
+import { schema } from "../blockdb/schema";
+import type { ColorMatch } from "./cards";
 import { COLLECTION } from "./collection";
 
 /** The reason a control is inert, shown under it verbatim. */
@@ -31,38 +32,16 @@ export const COLOR_OPTIONS: Option[] = [
   { value: "B", label: "Black" },
   { value: "R", label: "Red" },
   { value: "G", label: "Green" },
-  {
-    value: "C",
-    label: "Colorless",
-    unsupported:
-      "Colorless is the absence of any colour — an empty `colors` array. Multi-valued fields " +
-      "only offer `some`, which needs a value to match, so there is no way to ask for none.",
-  },
+  // Not a value in the data: the empty list, queried with `isEmpty`. Exclusive with the others.
+  { value: "C", label: "Colorless" },
 ];
 
-/**
- * Scryfall's colour comparison. Only "any of" survives: the engine takes one filter per
- * field and `some: { in: [...] }` is a disjunction, so requiring *all* selected colours
- * (Scryfall's "including") or forbidding the unselected ones ("exactly", "at most") would
- * each need several filters on `colors` at once.
- */
-export const COLOR_COMPARISONS: Option[] = [
+/** Scryfall's colour comparison, each one list operator on `colors` (see `colorFilter`). */
+export const COLOR_COMPARISONS: Option<ColorMatch>[] = [
   { value: "any", label: "Any of these colors" },
-  {
-    value: "exactly",
-    label: "Exactly these colors",
-    unsupported: "Needs more than one filter on `colors`; the engine allows one per field.",
-  },
-  {
-    value: "including",
-    label: "Including these colors",
-    unsupported: "Needs to AND several `colors` filters together.",
-  },
-  {
-    value: "atmost",
-    label: "At most these colors",
-    unsupported: "Needs to exclude every unselected colour, which is one filter each.",
-  },
+  { value: "exactly", label: "Exactly these colors" },
+  { value: "including", label: "Including these colors" },
+  { value: "atmost", label: "At most these colors" },
 ];
 
 // ---------- stats ----------

@@ -22,8 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-# Built shard tree — regenerate with `static-shard build`
-/public/shard-data/
+# Built block tree — regenerate with `blockdb build`
+/public/blockdb/
 
 # Scryfall bulk source (532 MB) — build input, not a deploy artifact
 default-cards-*.jsonl

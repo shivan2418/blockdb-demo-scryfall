@@ -1,9 +1,9 @@
 /**
- * The query facade. Everything the UI knows about static-shard goes through
+ * The query facade. Everything the UI knows about blockdb goes through
  * here, so the components deal in plain filter objects.
  */
-import { ShardError, type OrderByOf, type WhereOf } from "static-shard";
-import { schema, type Schema } from "../shard-db/schema";
+import { BlockDbError, type OrderByOf, type WhereOf } from "blockdb";
+import { schema, type Schema } from "../blockdb/schema";
 import { numericColumnFor, statSupports, type CriterionId, type StatField, type StatOp } from "./advanced-fields";
 import type { Card } from "./card-view";
 import { cards } from "./client";
@@ -41,13 +41,50 @@ type DraftWhere = { -readonly [K in keyof CardWhere]: CardWhere[K] };
 export const PAGE_SIZE = 60;
 
 /**
- * `name` is the dataset's sort field, so shards hold contiguous runs of names. A query ordered by
- * name (or not ordered at all) walks shards from one end and stops once the page is full, which is
- * what makes an unfiltered A–Z browse cheap. Any other order has to read every candidate shard
+ * `name` is the dataset's sort field, so blocks hold contiguous runs of names. A query ordered by
+ * name (or not ordered at all) walks blocks from one end and stops once the page is full, which is
+ * what makes an unfiltered A–Z browse cheap. Any other order has to read every candidate block
  * before it knows the first page, so an unfiltered browse under such an order is narrowed to this
- * one slice of the alphabet — a contiguous handful of shards instead of all 530.
+ * one slice of the alphabet — a contiguous handful of blocks instead of all 530.
  */
 export const DEFAULT_WINDOW = "A";
+
+/**
+ * Scryfall's colour comparisons, one list operator each (ADR-0010 in blockdb): any = `some`,
+ * including = `hasEvery`, at most = `every`, exactly = both of the last two on the same field.
+ */
+export type ColorMatch = "any" | "exactly" | "including" | "atmost";
+export const COLOR_MATCHES: readonly ColorMatch[] = ["any", "exactly", "including", "atmost"];
+
+/** Colorless isn't a value in `colors` — it's the empty list, queried with `isEmpty`. */
+export const COLORLESS = "C";
+
+type ColorFilter =
+  | { isEmpty: true }
+  | { some: { in: CardColor[] } }
+  | { hasEvery: CardColor[] }
+  | { every: { in: CardColor[] } }
+  | { hasEvery: CardColor[]; every: { in: CardColor[] } };
+
+/**
+ * One field's filter for a colour selection. Colorless is exclusive in the form; if it arrives
+ * alongside colours from a hand-edited URL, the colours win, since "colorless or W" is an OR the
+ * engine has no way to say.
+ */
+export function colorFilter(values: string[] | undefined, match: ColorMatch = "any"): ColorFilter | undefined {
+  const colors = values?.length ? knownColors(values) : [];
+  if (colors.length === 0) return values?.includes(COLORLESS) ? { isEmpty: true } : undefined;
+  switch (match) {
+    case "any":
+      return { some: { in: colors } };
+    case "including":
+      return { hasEvery: colors };
+    case "atmost":
+      return { every: { in: colors } };
+    case "exactly":
+      return { hasEvery: colors, every: { in: colors } };
+  }
+}
 
 /** One row of the advanced form's Stats section. `value` stays a string — power holds `*`. */
 export interface StatFilter {
@@ -64,9 +101,14 @@ export interface CardFilters {
   flavor?: string;
   /** Compared whole, not as a substring — `mana_cost` was indexed without `contains`. */
   manaCost?: string;
-  /** Matches cards containing ANY of these colors (one filter per field, implicit-AND only). */
+  /** W/U/B/R/G, or `C` alone for colorless; compared per `colorMatch`. */
   colors?: string[];
-  /** Colour identity, same any-of semantics as `colors`. */
+  /** How `colors` is compared. Absent means "any". */
+  colorMatch?: ColorMatch;
+  /**
+   * Colour identity, Scryfall's commander semantics: cards that fit inside it, so colorless cards
+   * match every identity. `C` alone means colorless identity only.
+   */
   identity?: string[];
   rarity?: string[];
   cmc?: number[];
@@ -217,19 +259,46 @@ function applyStat(where: DraftWhere, field: StatField, op: StatOp, value: strin
 
 /**
  * `not` is a rider: the engine rejects a where whose every clause is a `not`, because there
- * would be nothing to prune shards with. Criteria toggled to NOT can produce exactly that.
+ * would be nothing to prune blocks with. Criteria toggled to NOT can produce exactly that.
  */
 function prunes(where: DraftWhere): boolean {
   return Object.values(where).some((filter) =>
-    Object.keys(filter ?? {}).some((operator) => operator !== "not"),
+    Object.keys(filter ?? {}).some((operator) => !WEAK_OPERATORS.has(operator)),
   );
 }
 
-/** Sorts that match the shards' physical order, so a page can be filled without reading them all. */
-export const followsShardOrder = (sort: SortKey): boolean =>
+/**
+ * Operators that select from every block in this dataset. `not` is a rider by design; `isEmpty`
+ * and `every` do prune in general, but colorless cards sit in all 530 blocks and both admit them,
+ * so on their own they'd read the whole dataset under any order but name.
+ */
+const WEAK_OPERATORS = new Set(["not", "isEmpty", "every"]);
+
+/** True when `buildWhere` narrows this search to DEFAULT_WINDOW, so the page can say so. */
+export function usesDefaultWindow(filters: CardFilters, sort: SortKey): boolean {
+  return !followsBlockOrder(sort) && !prunes(filterClauses(filters));
+}
+
+/** Sorts that match the blocks' physical order, so a page can be filled without reading them all. */
+export const followsBlockOrder = (sort: SortKey): boolean =>
   sort === "relevance" || sort === "name" || sort === "name-desc";
 
 export function buildWhere(filters: CardFilters, sort: SortKey = "relevance"): CardWhere {
+  const where = filterClauses(filters);
+
+  // Nothing prunes. In block order an empty where is fine — the walk stops at the first page — but
+  // `not` riders can't stand alone, so they get an empty prefix: a sort-field range that admits every
+  // name. Any other order would read the whole dataset, so it's narrowed to DEFAULT_WINDOW.
+  if (!prunes(where)) {
+    if (!followsBlockOrder(sort)) where.name = { startsWith: DEFAULT_WINDOW };
+    else if (Object.keys(where).length > 0) where.name = { startsWith: "" };
+  }
+
+  return where;
+}
+
+/** The filters alone, before `buildWhere` adds any sort-field range to make the query prune. */
+function filterClauses(filters: CardFilters): DraftWhere {
   const where: DraftWhere = {};
 
   // Free text goes to the folded columns, so matching ignores case and accents.
@@ -263,11 +332,11 @@ export function buildWhere(filters: CardFilters, sort: SortKey = "relevance"): C
   const lang = clean(filters.lang);
   if (lang) where.lang = { equals: lang.toLowerCase() };
 
-  const colors = filters.colors?.length ? knownColors(filters.colors) : [];
-  if (colors.length) where.colors = { some: { in: colors } };
+  const colors = colorFilter(filters.colors, filters.colorMatch);
+  if (colors) where.colors = colors;
 
-  const identity = filters.identity?.length ? knownColors(filters.identity) : [];
-  if (identity.length) where.color_identity = { some: { in: identity } };
+  const identity = colorFilter(filters.identity, "atmost");
+  if (identity) where.color_identity = identity;
 
   if (filters.rarity?.length) where.rarity = { in: filters.rarity };
   if (filters.cmc?.length) where.cmc = { in: filters.cmc };
@@ -287,14 +356,6 @@ export function buildWhere(filters: CardFilters, sort: SortKey = "relevance"): C
     if (value && statSupports(stat.field, stat.op)) {
       STAT_CLAUSES[stat.field](where, stat.op, value);
     }
-  }
-
-  // Nothing prunes. In shard order an empty where is fine — the walk stops at the first page — but
-  // `not` riders can't stand alone, so they get an empty prefix: a sort-field range that admits every
-  // name. Any other order would read the whole dataset, so it's narrowed to DEFAULT_WINDOW.
-  if (!prunes(where)) {
-    if (!followsShardOrder(sort)) where.name = { startsWith: DEFAULT_WINDOW };
-    else if (Object.keys(where).length > 0) where.name = { startsWith: "" };
   }
 
   return where;
@@ -329,7 +390,7 @@ export interface SearchResult {
   /**
    * Exact match count, when the query already had to see every match — free, and vastly better than
    * `count()`'s zero-fetch upper bound (which reads ~35,000 for an artist with 396 cards). Absent
-   * when the shard walk stopped as soon as the page was full, since the tail was never fetched.
+   * when the block walk stopped as soon as the page was full, since the tail was never fetched.
    */
   total?: number;
 }
@@ -371,7 +432,7 @@ export async function getCard(id: string): Promise<Card | null> {
 }
 
 function friendlyError(error: unknown): Error {
-  if (error instanceof ShardError) {
+  if (error instanceof BlockDbError) {
     if (error.code === "LIMIT_EXCEEDED") {
       return new Error("That search matches too many cards to load at once — narrow it with a filter.");
     }

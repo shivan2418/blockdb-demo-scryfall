@@ -1,5 +1,5 @@
 {
-  "name": "shard-test",
+  "name": "blockdb-demo-scryfall",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -14,7 +14,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.1",
-    "static-shard": "link:/home/emil/Programming/static-shard/packages/static-shard"
+    "blockdb": "link:/home/emil/Programming/blockdb/packages/blockdb"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",
@@ -22,7 +22,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "oxlint": "^1.71.0",
-    "static-shard-cli": "link:/home/emil/Programming/static-shard/packages/static-shard-cli",
+    "blockdb-cli": "link:/home/emil/Programming/blockdb/packages/blockdb-cli",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
     "vitest": "^4.1.10"

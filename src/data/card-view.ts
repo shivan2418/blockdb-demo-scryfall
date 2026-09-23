@@ -6,7 +6,7 @@
  * narrows defensively. Image URLs are resolved in this one module so swapping
  * the CDN for self-hosted files later is a single-file change.
  */
-import type { Records } from "../shard-db/schema";
+import type { Records } from "../blockdb/schema";
 import { COLLECTION } from "./collection";
 
 export type Card = Records[typeof COLLECTION];

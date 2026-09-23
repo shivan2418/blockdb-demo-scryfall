@@ -6,8 +6,8 @@ import { SearchBar } from "../components/SearchBar";
 import {
   DEFAULT_WINDOW,
   SORT_LABELS,
-  followsShardOrder,
   hasAnyFilter,
+  usesDefaultWindow,
   type CardFilters,
   type SortKey,
 } from "../data/cards";
@@ -108,10 +108,12 @@ export function Browse() {
           )}
         </div>
 
-        {!filtered && !followsShardOrder(sort) && (
+        {usesDefaultWindow(filters, sort) && (
           <p className="notice">
-            Sorting all 116,138 cards this way would mean downloading every one, so this view is
-            limited to names starting with “{DEFAULT_WINDOW}”. Search or filter to sort the full set.
+            Sorting {filtered ? "this search" : "all 116,138 cards"} this way would mean
+            downloading every card, so this view is limited to names starting with “
+            {DEFAULT_WINDOW}”. {filtered ? "Add a narrower filter" : "Search or filter"} to sort the
+            full set.
           </p>
         )}
 

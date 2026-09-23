@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { CardFilters } from "../data/cards";
+import type { CardFilters, ColorMatch } from "../data/cards";
 import { ManaSymbol } from "./ManaSymbol";
 import { toggleValue } from "./toggle";
 
@@ -10,6 +10,14 @@ const COLORS = [
   { value: "R", name: "Red" },
   { value: "G", name: "Green" },
 ];
+
+/** The chips follow whichever comparison the advanced form last set. */
+const COLOR_MATCH_HINTS: Record<ColorMatch, string> = {
+  any: "Matches cards containing any selected color.",
+  including: "Matches cards containing all selected colors.",
+  exactly: "Matches cards of exactly the selected colors.",
+  atmost: "Matches cards with no colors beyond those selected.",
+};
 
 const RARITIES = ["common", "uncommon", "rare", "mythic"];
 const MANA_VALUES = [0, 1, 2, 3, 4, 5, 6, 7];
@@ -112,7 +120,7 @@ export function FilterPanel({
           classOf={(value) => `chip-color chip-${value.toLowerCase()}`}
           onToggle={(value) => patch({ colors: toggleValue(filters.colors, value) })}
         />
-        <p className="hint">Matches cards containing any selected color.</p>
+        <p className="hint">{COLOR_MATCH_HINTS[filters.colorMatch ?? "any"]}</p>
       </section>
 
       <section className="filter-group">

@@ -1,11 +1,11 @@
 {
-  "$schema": "node_modules/static-shard-cli/config.schema.json",
+  "$schema": "node_modules/blockdb-cli/config.schema.json",
   "formatVersion": 0,
   "collection": "default-cards-20260721211623",
   "input": {
     "path": "default-cards-20260721211623.jsonl"
   },
-  "shardBytes": 1048576,
+  "blockBytes": 1048576,
   "schema": {
     "sortField": "name",
     "pk": "id",

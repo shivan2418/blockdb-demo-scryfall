@@ -23,7 +23,7 @@ const INITIAL: SearchState = {
 
 /**
  * Runs the search, then fills in the total separately — `count()` needs no
- * shard fetches, so results paint without waiting on it.
+ * block fetches, so results paint without waiting on it.
  *
  * Every render gets a fresh request id and late responses from superseded
  * queries are dropped, so fast typing can't flicker older results back in.
