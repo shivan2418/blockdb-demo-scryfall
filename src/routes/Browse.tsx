@@ -27,12 +27,12 @@ function ResultSummary({
   filtered: boolean;
 }) {
   if (total === null) return <p className="summary">Counting…</p>;
-  const amount = total.toLocaleString();
+  const amount = `${total.toLocaleString()} ${total === 1 ? "card" : "cards"}`;
   return (
     <p className="summary">
       {/* count() is an upper bound unless the where pruned to zero or was empty. */}
-      {exact ? `${amount} cards` : `about ${amount} cards`}
-      {filtered ? " match" : " in view"}
+      {exact ? amount : `about ${amount}`}
+      {filtered ? (total === 1 && exact ? " matches" : " match") : " in view"}
     </p>
   );
 }

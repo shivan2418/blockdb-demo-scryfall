@@ -2,7 +2,7 @@
  * The query facade. Everything the UI knows about blockdb goes through
  * here, so the components deal in plain filter objects.
  */
-import { BlockDbError, type OrderByOf, type WhereOf } from "blockdb";
+import { BlockDbError, wherePrunes, type OrderByOf, type WhereOf } from "blockdb";
 import { schema, type Schema } from "../blockdb/schema";
 import { numericColumnFor, statSupports, type CriterionId, type StatField, type StatOp } from "./advanced-fields";
 import type { Card } from "./card-view";
@@ -283,25 +283,19 @@ function applyStat(where: DraftWhere, field: StatField, op: StatOp, value: strin
 
 /**
  * Whether this where narrows the read. The engine rejects a where made only of riders (ADR-0013 in
- * blockdb), and criteria toggled to NOT or a one-letter search can produce exactly that. Beyond the
- * engine's own rule, this also counts as weak the filters that are legal but select from every block.
+ * blockdb), and criteria toggled to NOT or a one-letter search can produce exactly that; blockdb's
+ * `wherePrunes` is that exact rule. On top of it, filters that are legal but select from every block
+ * in this dataset are set aside first, and an empty where counts as not narrowing (blockdb allows it,
+ * but it's the case the default window exists for).
  */
 function prunes(where: DraftWhere): boolean {
-  return Object.entries(where).some(
-    ([field, filter]) =>
-      !FIELDS_IN_EVERY_BLOCK.has(field) &&
-      Object.entries(filter ?? {}).some(([operator, value]) => operatorPrunes(operator, value)),
-  );
+  const narrowing = Object.entries(where).flatMap(([field, filter]) => {
+    if (FIELDS_IN_EVERY_BLOCK.has(field)) return [];
+    const kept = Object.entries(filter ?? {}).filter(([operator]) => !WEAK_OPERATORS.has(operator));
+    return kept.length ? [[field, Object.fromEntries(kept)] as const] : [];
+  });
+  return narrowing.length > 0 && wherePrunes(Object.fromEntries(narrowing), schema[COLLECTION]);
 }
-
-function operatorPrunes(operator: string, value: unknown): boolean {
-  if (WEAK_OPERATORS.has(operator)) return false;
-  // `contains` looks up the trigrams of its argument, and a shorter one has none, so the engine
-  // treats it as a rider.
-  return !(operator === "contains" && typeof value === "string" && value.length < MIN_TRIGRAM);
-}
-
-const MIN_TRIGRAM = 3;
 
 /**
  * Indexed booleans whose values both occur in all 530 blocks (`blockdb build` warns that they
@@ -320,11 +314,12 @@ const FIELDS_IN_EVERY_BLOCK = new Set([
 ]);
 
 /**
- * Operators that select from every block in this dataset. `not` is a rider by design; `isEmpty`
- * and `every` do prune in general, but colorless cards sit in all 530 blocks and both admit them,
- * so on their own they'd read the whole dataset under any order but name.
+ * Operators that select from every block in this dataset, though blockdb counts them as pruning:
+ * colorless cards sit in all 530 blocks and both `isEmpty` and `every` admit them, so on their own
+ * they'd read the whole dataset under any order but name. (`not` is a rider, which `wherePrunes`
+ * already knows.)
  */
-const WEAK_OPERATORS = new Set(["not", "isEmpty", "every"]);
+const WEAK_OPERATORS = new Set(["isEmpty", "every"]);
 
 /** True when `buildWhere` narrows this search to DEFAULT_WINDOW, so the page can say so. */
 export function usesDefaultWindow(filters: CardFilters, sort: SortKey): boolean {
