@@ -88,9 +88,10 @@ unless you're rebuilding the data.
    read from that key.
 3. Run `pnpm exec blockdb build`. This regenerates `public/blockdb/` and `src/blockdb/`.
    If a newer dump adds fields that can be missing, the build stops with a schema-drift error
-   naming the field. Add `"absent": true` to that field in `blockdb.config.json` by hand. Don't
-   run `blockdb init --reinfer`: as of v0.2.0 it resets the sort field, the compression setting
-   and the `contains` opt-ins this config depends on.
+   listing every such field. Add `"absent": true` to each in `blockdb.config.json`, or run
+   `pnpm exec blockdb init --reinfer`. Since v0.2.1 that refreshes only facts about the data and
+   keeps the sort field, indexes, `contains` opt-ins and compression setting. Review the config
+   diff either way.
 4. Commit and push. Each refresh adds about 59 MB to the git history.
 
 The mana symbol table (`src/data/symbology.json`) is a snapshot of Scryfall's `/symbology` list.
@@ -100,7 +101,7 @@ When new symbols come out, refresh it with `python3 scripts/fetch_symbology.py`.
 
 Every push to `master` runs `.github/workflows/pages.yml`. It installs the dependencies, runs the
 tests, builds the site and publishes `dist/` to GitHub Pages. blockdb installs from its
-[v0.2.0 GitHub Release](https://github.com/shivan2418/blockdb/releases/tag/v0.2.0) tarballs.
+[v0.3.1 GitHub Release](https://github.com/shivan2418/blockdb/releases/tag/v0.3.1) tarballs.
 
 The blocks are gzipped rather than brotli-compressed on purpose. GitHub Pages serves both as raw
 bytes, so the browser has to decompress them itself, and Chrome can't decompress brotli natively

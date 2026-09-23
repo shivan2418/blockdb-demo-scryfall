@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       blockdb:
-        specifier: https://github.com/shivan2418/blockdb/releases/download/v0.2.0/blockdb-0.2.0.tgz
-        version: https://github.com/shivan2418/blockdb/releases/download/v0.2.0/blockdb-0.2.0.tgz
+        specifier: https://github.com/shivan2418/blockdb/releases/download/v0.3.1/blockdb-0.3.1.tgz
+        version: https://github.com/shivan2418/blockdb/releases/download/v0.3.1/blockdb-0.3.1.tgz
       react:
         specifier: ^19.2.7
         version: 19.2.8
@@ -34,8 +34,8 @@ importers:
         specifier: ^6.0.3
         version: 6.0.4(vite@8.1.5(@types/node@24.13.3))
       blockdb-cli:
-        specifier: https://github.com/shivan2418/blockdb/releases/download/v0.2.0/blockdb-cli-0.2.0.tgz
-        version: https://github.com/shivan2418/blockdb/releases/download/v0.2.0/blockdb-cli-0.2.0.tgz
+        specifier: https://github.com/shivan2418/blockdb/releases/download/v0.3.1/blockdb-cli-0.3.1.tgz
+        version: https://github.com/shivan2418/blockdb/releases/download/v0.3.1/blockdb-cli-0.3.1.tgz
       oxlint:
         specifier: ^1.71.0
         version: 1.75.0
@@ -364,15 +364,15 @@ packages:
     resolution: {integrity: sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==}
     engines: {node: '>=12'}
 
-  blockdb-cli@https://github.com/shivan2418/blockdb/releases/download/v0.2.0/blockdb-cli-0.2.0.tgz:
-    resolution: {integrity: sha512-745ARWzvBi9LTnlYOfqpXimL6TDz9m4G0m1AjtzHwTS1K306AKnfqM8Rhep5grsnAJcYwfmXBOSFyyRX5tU07w==, tarball: https://github.com/shivan2418/blockdb/releases/download/v0.2.0/blockdb-cli-0.2.0.tgz}
-    version: 0.2.0
+  blockdb-cli@https://github.com/shivan2418/blockdb/releases/download/v0.3.1/blockdb-cli-0.3.1.tgz:
+    resolution: {integrity: sha512-mqW5z128F7fDZUO9w/ZOoyLCxzjHQ+XsV2ms8y/0WvBpAErBhjoLCHai3G4C6j2LVYbH/ZRQQSDpn8037uhepQ==, tarball: https://github.com/shivan2418/blockdb/releases/download/v0.3.1/blockdb-cli-0.3.1.tgz}
+    version: 0.3.1
     engines: {node: '>=20'}
     hasBin: true
 
-  blockdb@https://github.com/shivan2418/blockdb/releases/download/v0.2.0/blockdb-0.2.0.tgz:
-    resolution: {integrity: sha512-Gvmx3fnyBAV9bpPAX/zEKKx1XOKLBcNEwI01GFWlPAI+bOKGgR1y30Sm8xVClQ47D4rj+0PHYmAFjQniWdqkMg==, tarball: https://github.com/shivan2418/blockdb/releases/download/v0.2.0/blockdb-0.2.0.tgz}
-    version: 0.2.0
+  blockdb@https://github.com/shivan2418/blockdb/releases/download/v0.3.1/blockdb-0.3.1.tgz:
+    resolution: {integrity: sha512-GL5SUvbK5/o5hxFPsKCRYk2vxJqDsRFHvyOgvHkIFYuKBKA0ZwJuUcSMfahB+6VBS5DwZSg0XCPZwmUn+acHfA==, tarball: https://github.com/shivan2418/blockdb/releases/download/v0.3.1/blockdb-0.3.1.tgz}
+    version: 0.3.1
     engines: {node: '>=20'}
 
   chai@6.2.2:
@@ -908,9 +908,9 @@ snapshots:
 
   assertion-error@2.0.1: {}
 
-  blockdb-cli@https://github.com/shivan2418/blockdb/releases/download/v0.2.0/blockdb-cli-0.2.0.tgz: {}
+  blockdb-cli@https://github.com/shivan2418/blockdb/releases/download/v0.3.1/blockdb-cli-0.3.1.tgz: {}
 
-  blockdb@https://github.com/shivan2418/blockdb/releases/download/v0.2.0/blockdb-0.2.0.tgz: {}
+  blockdb@https://github.com/shivan2418/blockdb/releases/download/v0.3.1/blockdb-0.3.1.tgz: {}
 
   chai@6.2.2: {}
 
