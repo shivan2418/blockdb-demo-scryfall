@@ -21,7 +21,7 @@ function App() {
       <div className="app">
         <header className="app-header">
           <Link to="/" className="brand">
-            <strong>shardfall</strong>
+            <strong>blockfall</strong>
             <span>116,138 Magic cards, queried from static files</span>
           </Link>
           <nav className="app-nav">

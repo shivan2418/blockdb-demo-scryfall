@@ -518,30 +518,6 @@ select:focus {
   line-height: 1.45;
 }
 
-.adv-unavailable {
-  margin: 8px 0 0;
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.45;
-  border-left: 2px solid var(--border);
-  padding-left: 10px;
-}
-
-.adv-unavailable strong {
-  color: var(--danger);
-  font-weight: 600;
-}
-
-/* Disabled rows recede but stay readable — the reason under them is the point. */
-.adv-row-off .adv-label,
-.adv-row-off .adv-control fieldset {
-  opacity: 0.45;
-}
-
-.adv-row-off .adv-icon {
-  color: var(--muted);
-}
-
 .adv-checks {
   display: flex;
   flex-wrap: wrap;
@@ -561,10 +537,6 @@ select:focus {
   margin: 0;
   accent-color: var(--accent);
   cursor: pointer;
-}
-
-.adv-check-off {
-  cursor: default;
 }
 
 .adv-check .pip .mana-symbol {

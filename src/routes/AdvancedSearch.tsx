@@ -1,9 +1,9 @@
 /**
  * Scryfall's advanced search page, section for section, over blockdb.
  *
- * The section order, labels and hint wording follow scryfall.com/advanced. Rows this build
- * cannot answer — Formats, Prices, Block, Lore Finder and several Preferences — render in
- * place, disabled, with the reason: the gaps are as informative as the fields that work.
+ * The section order, labels and hint wording follow scryfall.com/advanced. Sections and
+ * options this build can't answer (formats, prices, blocks, Lore Finder, display modes) are
+ * left out rather than shown disabled.
  *
  * It opens in place of the filter sidebar on the browse page rather than on a page of its
  * own, so the results stay in view and there is nothing to navigate back from.
@@ -24,7 +24,6 @@ import {
   GAME_OPTIONS,
   LANGUAGE_OPTIONS,
   RARITY_OPTIONS,
-  UNSUPPORTED_SECTIONS,
 } from "../data/advanced-fields";
 import {
   COLORLESS,
@@ -50,14 +49,11 @@ const ICONS = {
   mana: "⬢",
   stats: "▦",
   games: "◫",
-  formats: "⬒",
   sets: "✦",
   rarity: "★",
   criteria: "☰",
-  prices: "⬓",
   artist: "✎",
   flavor: "❞",
-  lore: "⌕",
   language: "⁂",
   preferences: "⚙",
 };
@@ -238,7 +234,7 @@ export function AdvancedForm({
         <FormRow
           label="Stats"
           icon={ICONS.stats}
-          hint="Restrict cards by their printed statistics. Cards without the stat are not returned. Mana value takes any comparison; power, toughness and loyalty are stored as strings, so they compare for equality only."
+          hint="Restrict cards by their printed statistics. Cards without the stat are not returned."
         >
           <StatRows stats={filters.stats} onChange={(stats) => patch({ stats })} />
         </FormRow>
@@ -256,31 +252,10 @@ export function AdvancedForm({
           />
         </FormRow>
 
-        <FormRow label="Formats" icon={ICONS.formats} unavailable={UNSUPPORTED_SECTIONS.formats}>
-          <ControlLine>
-            <SelectField
-              label="Format Status"
-              options={[
-                { value: "legal", label: "Legal" },
-                { value: "restricted", label: "Restricted" },
-                { value: "banned", label: "Banned" },
-              ]}
-              value="legal"
-              onChange={() => undefined}
-            />
-            <SelectField
-              label="Format"
-              options={[{ value: "", label: "" }]}
-              value=""
-              onChange={() => undefined}
-            />
-          </ControlLine>
-        </FormRow>
-
         <FormRow
           label="Sets"
           icon={ICONS.sets}
-          hint="Restrict cards by set name or set code. Blocks are not in the source data."
+          hint="Restrict cards by set name or set code."
         >
           <TextField
             label="Set"
@@ -293,15 +268,6 @@ export function AdvancedForm({
             placeholder="Or an exact set code, e.g. “blb”"
             value={filters.set}
             onChange={(set) => patch({ set })}
-          />
-        </FormRow>
-
-        <FormRow label="Block or Group" icon={ICONS.sets} unavailable={UNSUPPORTED_SECTIONS.block}>
-          <TextField
-            label="Block or Group"
-            placeholder="Enter a block name"
-            value=""
-            onChange={() => undefined}
           />
         </FormRow>
 
@@ -321,7 +287,7 @@ export function AdvancedForm({
         <FormRow
           label="Criteria"
           icon={ICONS.criteria}
-          hint="Click once to require a criterion, twice to exclude it. These are the boolean fields the build indexed; the box below matches one of the card’s parsed keyword abilities."
+          hint="Click once to require a criterion, twice to exclude it. The box below matches one of the card’s keyword abilities, e.g. “Flying”."
         >
           <CriteriaPicker
             is={filters.is}
@@ -334,28 +300,6 @@ export function AdvancedForm({
             value={filters.keyword}
             onChange={(keyword) => patch({ keyword })}
           />
-        </FormRow>
-
-        <FormRow label="Prices" icon={ICONS.prices} unavailable={UNSUPPORTED_SECTIONS.prices}>
-          <ControlLine>
-            <SelectField
-              label="Currency"
-              options={[
-                { value: "usd", label: "USD" },
-                { value: "eur", label: "Euros" },
-                { value: "tix", label: "MTGO Tickets" },
-              ]}
-              value="usd"
-              onChange={() => undefined}
-            />
-            <TextField
-              label="Currency value"
-              placeholder="Any value, e.g. “15.00”"
-              value=""
-              onChange={() => undefined}
-              wide={false}
-            />
-          </ControlLine>
         </FormRow>
 
         <FormRow label="Artist" icon={ICONS.artist}>
@@ -380,19 +324,10 @@ export function AdvancedForm({
           />
         </FormRow>
 
-        <FormRow label="Lore Finder™" icon={ICONS.lore} unavailable={UNSUPPORTED_SECTIONS.lore}>
-          <TextField
-            label="Lore Finder"
-            placeholder="Any text, especially names. e.g. “Jhoira”"
-            value=""
-            onChange={() => undefined}
-          />
-        </FormRow>
-
         <FormRow
           label="Language"
           icon={ICONS.language}
-          hint="Specify a printed language. Scryfall defaults to English; this defaults to any, because English alone is 113,494 of the 116,138 records and would fetch nearly every block."
+          hint="Only return cards printed in this language."
         >
           <SelectField
             label="Language"
@@ -405,7 +340,7 @@ export function AdvancedForm({
         <FormRow
           label="Preferences"
           icon={ICONS.preferences}
-          hint="Result ordering. The display modes and printing preferences below have nothing behind them in this build."
+          hint="The order results are shown in."
         >
           <ControlLine>
             <SelectField
@@ -417,43 +352,6 @@ export function AdvancedForm({
           </ControlLine>
         </FormRow>
 
-        <FormRow label="Display" icon={ICONS.preferences} unavailable={UNSUPPORTED_SECTIONS.display}>
-          <SelectField
-            label="Display"
-            options={[{ value: "images", label: "Display as Images" }]}
-            value="images"
-            onChange={() => undefined}
-          />
-        </FormRow>
-
-        <FormRow label="Prefer" icon={ICONS.preferences} unavailable={UNSUPPORTED_SECTIONS.prefer}>
-          <SelectField
-            label="Prefer"
-            options={[{ value: "none", label: "Prefer No Preference" }]}
-            value="none"
-            onChange={() => undefined}
-          />
-        </FormRow>
-
-        <FormRow label="Printings" icon={ICONS.preferences} unavailable={UNSUPPORTED_SECTIONS.prints}>
-          <CheckGroup
-            legend="Printings"
-            options={[{ value: "prints", label: "Show all card prints" }]}
-            selected={undefined}
-            onToggle={() => undefined}
-          />
-        </FormRow>
-
-        <FormRow label="Extra Cards" icon={ICONS.preferences} unavailable={UNSUPPORTED_SECTIONS.extras}>
-          <CheckGroup
-            legend="Extra cards"
-            options={[
-              { value: "extras", label: "Include extra cards (tokens, planes, schemes, etc)" },
-            ]}
-            selected={undefined}
-            onToggle={() => undefined}
-          />
-        </FormRow>
       </div>
 
       <div className="advanced-submit">

@@ -28,10 +28,7 @@ export function TextField({
   );
 }
 
-/**
- * A select whose unsupported options stay visible but disabled, so the operators this build
- * lacks are apparent from the dropdown itself rather than only from the hint.
- */
+/** A select that lists only the options this build can answer. */
 export function SelectField<T extends string>({
   label,
   options,
@@ -50,18 +47,13 @@ export function SelectField<T extends string>({
       value={value}
       onChange={(event) => onChange(event.target.value as T)}
     >
-      {options.map((option) => (
-        // A disabled option already reads as unavailable; spelling it out in the label would
-        // widen the select to the longest reason.
-        <option
-          key={option.value}
-          value={option.value}
-          disabled={Boolean(option.unsupported)}
-          title={option.unsupported}
-        >
-          {option.label}
-        </option>
-      ))}
+      {options
+        .filter((option) => !option.unsupported)
+        .map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
     </select>
   );
 }
@@ -83,26 +75,23 @@ export function CheckGroup({
 }) {
   return (
     <div className="adv-checks" role="group" aria-label={legend}>
-      {options.map((option) => (
-        <label
-          key={option.value}
-          className={`adv-check ${option.unsupported ? "adv-check-off" : ""}`}
-          title={option.unsupported}
-        >
-          <input
-            type="checkbox"
-            checked={selected?.includes(option.value) ?? false}
-            disabled={Boolean(option.unsupported)}
-            onChange={() => onToggle(option.value)}
-          />
-          {pips && (
-            <span className="pip" aria-hidden="true">
-              <ManaSymbol symbol={option.value} decorative />
-            </span>
-          )}
-          <span>{option.label}</span>
-        </label>
-      ))}
+      {options
+        .filter((option) => !option.unsupported)
+        .map((option) => (
+          <label key={option.value} className="adv-check">
+            <input
+              type="checkbox"
+              checked={selected?.includes(option.value) ?? false}
+              onChange={() => onToggle(option.value)}
+            />
+            {pips && (
+              <span className="pip" aria-hidden="true">
+                <ManaSymbol symbol={option.value} decorative />
+              </span>
+            )}
+            <span>{option.label}</span>
+          </label>
+        ))}
     </div>
   );
 }

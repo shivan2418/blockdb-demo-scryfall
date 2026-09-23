@@ -3,9 +3,7 @@
  * section by section.
  *
  * Every option here is either backed by an indexed field with the operator it needs, or
- * carries an `unsupported` reason explaining what the build would have to change to make
- * it work. Nothing is silently dropped: the form renders the disabled control anyway, so
- * the shape of the page matches Scryfall's and the gaps are legible rather than invisible.
+ * carries an `unsupported` reason. The form leaves those out, so what's on screen works.
  *
  * Enum values were read off the dataset itself rather than guessed — `dw` for Dwarvish,
  * not `dwa`.
@@ -14,13 +12,13 @@ import { schema } from "../blockdb/schema";
 import type { ColorMatch } from "./cards";
 import { COLLECTION } from "./collection";
 
-/** The reason a control is inert, shown under it verbatim. */
+/** Why an option can't be answered; the form hides options that carry one. */
 export type Unsupported = string;
 
 export interface Option<T extends string = string> {
   value: T;
   label: string;
-  /** Present ⟺ the control is rendered disabled with this explanation. */
+  /** Present ⟺ the option is left out of the form. */
   unsupported?: Unsupported;
 }
 
@@ -108,7 +106,7 @@ export const numericColumnFor = (field: StatField): string | undefined => STAT_C
 const whyUnsupported = (field: StatField): Unsupported =>
   `This operator is not indexed on \`${field}\` in this build.`;
 
-/** The operator dropdown for one stat, with whatever that field cannot do left disabled. */
+/** The operator dropdown for one stat; what the field can't do is marked and so hidden. */
 export function statOpOptions(field: StatField): Option<StatOp>[] {
   return STAT_OP_ORDER.map((op) => ({
     value: op,
@@ -224,38 +222,3 @@ export const MANA_SYMBOLS = [
   "S",
   "E",
 ];
-
-// ---------- sections with nothing behind them ----------
-
-/**
- * Scryfall rows this build cannot answer at all. They render in place, disabled, with the
- * reason — the honest version of "as many fields as we support".
- */
-export const UNSUPPORTED_SECTIONS = {
-  formats:
-    "`legalities` is stored as an unindexed JSON field in this build, so format legality " +
-    "cannot be filtered. Indexing it would mean flattening each format into its own field.",
-  prices:
-    "`prices` is stored as an unindexed JSON field, and price comparison would need range " +
-    "operators on the flattened numbers.",
-  block:
-    "Blocks are not part of the Scryfall bulk record, so there is no field to index. Only " +
-    "set code, set name and set type are present.",
-  lore:
-    "Lore Finder searches name, type, rules text and flavour text at once. The engine ANDs " +
-    "one filter per field and cannot OR across fields, so this needs four queries merged " +
-    "client-side.",
-  display:
-    "This demo renders one view — the image grid. Checklist, text and full views were never " +
-    "built, so there is nothing to switch to.",
-  prefer:
-    "Choosing between printings means ranking rows that already matched. The engine filters " +
-    "and sorts; it has no notion of preferring one duplicate over another.",
-  prints:
-    "The dataset is Scryfall's `default-cards`, which already carries one printing per card. " +
-    "There is no oracle-level grouping to collapse or expand.",
-  extras:
-    "Tokens, emblems and schemes are already in this dataset (`layout` holds `token`, " +
-    "`emblem`, `scheme` and more). Excluding them would take one `not` filter per layout, " +
-    "and the engine allows one filter per field.",
-} as const;
