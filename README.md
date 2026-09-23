@@ -96,7 +96,7 @@ When new symbols come out, refresh it with `python3 scripts/fetch_symbology.py`.
 
 Every push to `master` runs `.github/workflows/pages.yml`. It installs the dependencies, runs the
 tests, builds the site and publishes `dist/` to GitHub Pages. blockdb installs from its
-[v0.1.0 GitHub Release](https://github.com/shivan2418/blockdb/releases/tag/v0.1.0) tarballs.
+[v0.2.0 GitHub Release](https://github.com/shivan2418/blockdb/releases/tag/v0.2.0) tarballs.
 
 The blocks are gzipped rather than brotli-compressed on purpose. GitHub Pages serves both as raw
 bytes, so the browser has to decompress them itself, and Chrome can't decompress brotli natively

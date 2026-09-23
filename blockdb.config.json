@@ -18,22 +18,27 @@
         "indexed": true
       },
       "oracle_id": {
-        "kind": "string"
+        "kind": "string",
+        "absent": true
       },
       "multiverse_ids": {
         "kind": "json"
       },
       "mtgo_id": {
-        "kind": "number"
+        "kind": "number",
+        "absent": true
       },
       "arena_id": {
-        "kind": "number"
+        "kind": "number",
+        "absent": true
       },
       "tcgplayer_id": {
-        "kind": "number"
+        "kind": "number",
+        "absent": true
       },
       "cardmarket_id": {
-        "kind": "number"
+        "kind": "number",
+        "absent": true
       },
       "name": {
         "kind": "string",
@@ -67,21 +72,26 @@
         "kind": "date"
       },
       "image_uris": {
-        "kind": "json"
+        "kind": "json",
+        "absent": true
       },
       "mana_cost": {
         "kind": "string",
-        "indexed": true
+        "indexed": true,
+        "absent": true
       },
       "cmc": {
         "kind": "number",
-        "indexed": true
+        "indexed": true,
+        "absent": true
       },
       "type_line": {
-        "kind": "string"
+        "kind": "string",
+        "absent": true
       },
       "oracle_text": {
-        "kind": "string"
+        "kind": "string",
+        "absent": true
       },
       "colors": {
         "kind": "string",
@@ -93,7 +103,8 @@
           "U",
           "W"
         ],
-        "multi": true
+        "multi": true,
+        "absent": true
       },
       "color_identity": {
         "kind": "string",
@@ -113,10 +124,12 @@
         "multi": true
       },
       "produced_mana": {
-        "kind": "json"
+        "kind": "json",
+        "absent": true
       },
       "all_parts": {
-        "kind": "json"
+        "kind": "json",
+        "absent": true
       },
       "legalities": {
         "kind": "json"
@@ -206,16 +219,19 @@
         "indexed": true
       },
       "card_back_id": {
-        "kind": "string"
+        "kind": "string",
+        "absent": true
       },
       "artist": {
         "kind": "string"
       },
       "artist_ids": {
-        "kind": "json"
+        "kind": "json",
+        "absent": true
       },
       "illustration_id": {
-        "kind": "string"
+        "kind": "string",
+        "absent": true
       },
       "border_color": {
         "kind": "string"
@@ -246,74 +262,96 @@
         "kind": "json"
       },
       "purchase_uris": {
-        "kind": "json"
+        "kind": "json",
+        "absent": true
       },
       "mtgo_foil_id": {
-        "kind": "number"
+        "kind": "number",
+        "absent": true
       },
       "power": {
         "kind": "string",
-        "indexed": true
+        "indexed": true,
+        "absent": true
       },
       "toughness": {
         "kind": "string",
-        "indexed": true
+        "indexed": true,
+        "absent": true
       },
       "flavor_text": {
-        "kind": "string"
+        "kind": "string",
+        "absent": true
       },
       "edhrec_rank": {
         "kind": "number",
-        "indexed": true
+        "indexed": true,
+        "absent": true
       },
       "penny_rank": {
-        "kind": "number"
+        "kind": "number",
+        "absent": true
       },
       "promo_types": {
-        "kind": "json"
+        "kind": "json",
+        "absent": true
       },
       "security_stamp": {
-        "kind": "string"
+        "kind": "string",
+        "absent": true
       },
       "card_faces": {
-        "kind": "json"
+        "kind": "json",
+        "absent": true
       },
       "preview": {
-        "kind": "json"
+        "kind": "json",
+        "absent": true
       },
       "watermark": {
-        "kind": "string"
+        "kind": "string",
+        "absent": true
       },
       "frame_effects": {
-        "kind": "json"
+        "kind": "json",
+        "absent": true
       },
       "loyalty": {
         "kind": "string",
-        "indexed": true
+        "indexed": true,
+        "absent": true
       },
       "printed_name": {
-        "kind": "string"
+        "kind": "string",
+        "absent": true
       },
       "resource_id": {
-        "kind": "string"
+        "kind": "string",
+        "absent": true
       },
       "tcgplayer_etched_id": {
-        "kind": "number"
+        "kind": "number",
+        "absent": true
       },
       "flavor_name": {
-        "kind": "string"
+        "kind": "string",
+        "absent": true
       },
       "attraction_lights": {
-        "kind": "json"
+        "kind": "json",
+        "absent": true
       },
       "color_indicator": {
-        "kind": "json"
+        "kind": "json",
+        "absent": true
       },
       "printed_text": {
-        "kind": "string"
+        "kind": "string",
+        "absent": true
       },
       "printed_type_line": {
-        "kind": "string"
+        "kind": "string",
+        "absent": true
       },
       "power_num": {
         "kind": "number",
