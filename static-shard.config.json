@@ -7,44 +7,37 @@
   },
   "shardBytes": 1048576,
   "schema": {
-    "sortField": "image_updated_at",
+    "sortField": "name",
     "pk": "id",
     "fields": {
       "object": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "id": {
         "kind": "string",
         "indexed": true
       },
       "oracle_id": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "multiverse_ids": {
         "kind": "json"
       },
       "mtgo_id": {
-        "kind": "number",
-        "indexed": true
+        "kind": "number"
       },
       "arena_id": {
-        "kind": "number",
-        "indexed": true
+        "kind": "number"
       },
       "tcgplayer_id": {
-        "kind": "number",
-        "indexed": true
+        "kind": "number"
       },
       "cardmarket_id": {
-        "kind": "number",
-        "indexed": true
+        "kind": "number"
       },
       "name": {
         "kind": "string",
-        "indexed": true,
-        "contains": true
+        "indexed": true
       },
       "lang": {
         "kind": "string",
@@ -55,28 +48,23 @@
         "indexed": true
       },
       "uri": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "scryfall_uri": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "layout": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "highres_image": {
         "kind": "boolean",
         "indexed": true
       },
       "image_status": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "image_updated_at": {
-        "kind": "date",
-        "indexed": true
+        "kind": "date"
       },
       "image_uris": {
         "kind": "json"
@@ -90,14 +78,10 @@
         "indexed": true
       },
       "type_line": {
-        "kind": "string",
-        "indexed": true,
-        "contains": true
+        "kind": "string"
       },
       "oracle_text": {
-        "kind": "string",
-        "indexed": true,
-        "contains": true
+        "kind": "string"
       },
       "colors": {
         "kind": "string",
@@ -129,17 +113,7 @@
         "multi": true
       },
       "produced_mana": {
-        "kind": "string",
-        "indexed": true,
-        "values": [
-          "B",
-          "C",
-          "G",
-          "R",
-          "U",
-          "W"
-        ],
-        "multi": true
+        "kind": "json"
       },
       "all_parts": {
         "kind": "json"
@@ -174,14 +148,7 @@
         "indexed": true
       },
       "finishes": {
-        "kind": "string",
-        "indexed": true,
-        "values": [
-          "etched",
-          "foil",
-          "nonfoil"
-        ],
-        "multi": true
+        "kind": "json"
       },
       "oversized": {
         "kind": "boolean",
@@ -200,45 +167,35 @@
         "indexed": true
       },
       "set_id": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "set": {
         "kind": "string",
         "indexed": true
       },
       "set_name": {
-        "kind": "string",
-        "indexed": true,
-        "contains": true
+        "kind": "string"
       },
       "set_type": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "set_uri": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "set_search_uri": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "scryfall_set_uri": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "rulings_uri": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "prints_search_uri": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "collector_number": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "digital": {
         "kind": "boolean",
@@ -249,30 +206,22 @@
         "indexed": true
       },
       "card_back_id": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "artist": {
-        "kind": "string",
-        "indexed": true,
-        "contains": true
+        "kind": "string"
       },
       "artist_ids": {
-        "kind": "string",
-        "indexed": true,
-        "multi": true
+        "kind": "json"
       },
       "illustration_id": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "border_color": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "frame": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "full_art": {
         "kind": "boolean",
@@ -300,8 +249,7 @@
         "kind": "json"
       },
       "mtgo_foil_id": {
-        "kind": "number",
-        "indexed": true
+        "kind": "number"
       },
       "power": {
         "kind": "string",
@@ -312,26 +260,20 @@
         "indexed": true
       },
       "flavor_text": {
-        "kind": "string",
-        "indexed": true,
-        "contains": true
+        "kind": "string"
       },
       "edhrec_rank": {
         "kind": "number",
         "indexed": true
       },
       "penny_rank": {
-        "kind": "number",
-        "indexed": true
+        "kind": "number"
       },
       "promo_types": {
-        "kind": "string",
-        "indexed": true,
-        "multi": true
+        "kind": "json"
       },
       "security_stamp": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "card_faces": {
         "kind": "json"
@@ -340,77 +282,38 @@
         "kind": "json"
       },
       "watermark": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "frame_effects": {
-        "kind": "string",
-        "indexed": true,
-        "values": [
-          "devoid",
-          "draft",
-          "enchantment",
-          "etched",
-          "extendedart",
-          "fullart",
-          "inverted",
-          "legendary",
-          "lesson",
-          "originpwdfc",
-          "showcase",
-          "snow",
-          "spree",
-          "tombstone"
-        ],
-        "multi": true
+        "kind": "json"
       },
       "loyalty": {
         "kind": "string",
         "indexed": true
       },
       "printed_name": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "resource_id": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "tcgplayer_etched_id": {
-        "kind": "number",
-        "indexed": true
+        "kind": "number"
       },
       "flavor_name": {
-        "kind": "string",
-        "indexed": true,
-        "values": [
-          "Shards of Narsil",
-          "Yojimbo"
-        ],
-        "absent": true
+        "kind": "string"
       },
       "attraction_lights": {
         "kind": "json"
       },
       "color_indicator": {
-        "kind": "string",
-        "indexed": true,
-        "values": [
-          "B",
-          "G",
-          "R",
-          "U",
-          "W"
-        ],
-        "multi": true
+        "kind": "json"
       },
       "printed_text": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "printed_type_line": {
-        "kind": "string",
-        "indexed": true
+        "kind": "string"
       },
       "power_num": {
         "kind": "number",
@@ -437,6 +340,66 @@
         "derive": {
           "from": "loyalty",
           "using": "numeric"
+        }
+      },
+      "name_fold": {
+        "kind": "string",
+        "indexed": true,
+        "contains": true,
+        "absent": true,
+        "derive": {
+          "from": "name",
+          "using": "fold"
+        }
+      },
+      "type_line_fold": {
+        "kind": "string",
+        "indexed": true,
+        "contains": true,
+        "absent": true,
+        "derive": {
+          "from": "type_line",
+          "using": "fold"
+        }
+      },
+      "oracle_text_fold": {
+        "kind": "string",
+        "indexed": true,
+        "contains": true,
+        "absent": true,
+        "derive": {
+          "from": "oracle_text",
+          "using": "fold"
+        }
+      },
+      "artist_fold": {
+        "kind": "string",
+        "indexed": true,
+        "contains": true,
+        "absent": true,
+        "derive": {
+          "from": "artist",
+          "using": "fold"
+        }
+      },
+      "flavor_text_fold": {
+        "kind": "string",
+        "indexed": true,
+        "contains": true,
+        "absent": true,
+        "derive": {
+          "from": "flavor_text",
+          "using": "fold"
+        }
+      },
+      "set_name_fold": {
+        "kind": "string",
+        "indexed": true,
+        "contains": true,
+        "absent": true,
+        "derive": {
+          "from": "set_name",
+          "using": "fold"
         }
       }
     }

@@ -2,30 +2,43 @@ import { describe, expect, test } from "vitest";
 import { manaSymbols } from "./card-view";
 import { datasetDate } from "./collection";
 import {
-  DEFAULT_SINCE,
+  DEFAULT_WINDOW,
   buildOrderBy,
   buildWhere,
+  fold,
   hasAnyFilter,
   normalizeManaCost,
-  titleCase,
   type CardFilters,
 } from "./cards";
 import { decodeState, encodeState, type BrowseState } from "./url-state";
 
 describe("buildWhere", () => {
-  test("falls back to the sort-field window when nothing is selected", () => {
-    // Without this an unpruned query would download every shard.
-    expect(buildWhere({})).toEqual({ image_updated_at: { gte: DEFAULT_SINCE } });
+  test("leaves an unfiltered browse in shard order empty — the walk stops at the first page", () => {
+    expect(buildWhere({})).toEqual({});
+    expect(buildWhere({}, "name")).toEqual({});
+    expect(buildWhere({}, "name-desc")).toEqual({});
+  });
+
+  test("narrows an unfiltered browse to the default window under any other order", () => {
+    // Without this, sorting by anything but name would download every shard.
+    for (const sort of ["newest", "oldest", "cmc", "cmc-desc", "popular"] as const) {
+      expect(buildWhere({}, sort)).toEqual({ name: { startsWith: DEFAULT_WINDOW } });
+    }
+    expect(buildWhere({ rarity: ["rare"] }, "newest")).toEqual({ rarity: { in: ["rare"] } });
   });
 
   test("treats blank and whitespace-only text as unset", () => {
-    expect(buildWhere({ name: "   " })).toEqual({ image_updated_at: { gte: DEFAULT_SINCE } });
+    expect(buildWhere({ name: "   " })).toEqual({});
   });
 
-  test("maps text filters to contains", () => {
+  test("maps text filters to contains on the folded columns, folding the query", () => {
     expect(buildWhere({ name: "Bolt", type: "Instant" })).toEqual({
-      name: { contains: "Bolt" },
-      type_line: { contains: "Instant" },
+      name_fold: { contains: "bolt" },
+      type_line_fold: { contains: "instant" },
+    });
+    expect(buildWhere({ artist: "Lim-Dûl", text: "FLYING" })).toEqual({
+      artist_fold: { contains: "lim-dul" },
+      oracle_text_fold: { contains: "flying" },
     });
   });
 
@@ -59,12 +72,12 @@ describe("buildWhere", () => {
       { not: ["reprint", "digital"] },
       { stats: [{ field: "power", op: "not", value: "2" }] },
     ];
-    const wheres = cases.map(buildWhere);
+    const wheres = cases.flatMap((filters) => [buildWhere(filters, "name"), buildWhere(filters, "newest")]);
 
     for (const where of wheres) {
+      // An empty where is fine; one made only of riders is what the engine refuses.
       const operators = Object.values(where).flatMap((filter) => Object.keys(filter ?? {}));
-      expect(operators.length).toBeGreaterThan(0);
-      expect(operators.every((operator) => operator === "not")).toBe(false);
+      if (operators.length > 0) expect(operators.every((operator) => operator === "not")).toBe(false);
     }
   });
 
@@ -120,28 +133,22 @@ describe("buildWhere", () => {
     expect(buildWhere({ stats: [{ field: "power", op: "equals", value: "*" }] })).toEqual({
       power: { equals: "*" },
     });
-    // `not` is a rider the engine refuses as a sole constraint, so it keeps company with the
-    // default window — same as every other criterion toggled to NOT.
+    // `not` is a rider the engine refuses as a sole constraint, so it keeps company with an
+    // empty name prefix — same as every other criterion toggled to NOT.
     expect(buildWhere({ stats: [{ field: "power", op: "not", value: "*" }] })).toEqual({
       power: { not: "*" },
-      image_updated_at: { gte: DEFAULT_SINCE },
+      name: { startsWith: "" },
     });
   });
 
   test("drops a comparison whose bound has no numeric reading", () => {
     // "power greater than *" is not a question, so no clause is invented for it.
-    expect(buildWhere({ stats: [{ field: "power", op: "gte", value: "*" }] })).toEqual({
-      image_updated_at: { gte: DEFAULT_SINCE },
-    });
+    expect(buildWhere({ stats: [{ field: "power", op: "gte", value: "*" }] })).toEqual({});
   });
 
   test("ignores stat rows with a blank or non-numeric value", () => {
-    expect(buildWhere({ stats: [{ field: "cmc", op: "equals", value: "  " }] })).toEqual({
-      image_updated_at: { gte: DEFAULT_SINCE },
-    });
-    expect(buildWhere({ stats: [{ field: "cmc", op: "equals", value: "abc" }] })).toEqual({
-      image_updated_at: { gte: DEFAULT_SINCE },
-    });
+    expect(buildWhere({ stats: [{ field: "cmc", op: "equals", value: "  " }] })).toEqual({});
+    expect(buildWhere({ stats: [{ field: "cmc", op: "equals", value: "abc" }] })).toEqual({});
   });
 
   test("lets an explicit mana value row win over the sidebar's chips", () => {
@@ -159,8 +166,8 @@ describe("buildWhere", () => {
     expect(
       buildWhere({ flavor: "Kjeldoran", setName: "Bloomburrow", identity: ["G"], games: ["arena"], lang: "JA" }),
     ).toEqual({
-      flavor_text: { contains: "Kjeldoran" },
-      set_name: { contains: "Bloomburrow" },
+      flavor_text_fold: { contains: "kjeldoran" },
+      set_name_fold: { contains: "bloomburrow" },
       color_identity: { some: { in: ["G"] } },
       games: { some: { in: ["arena"] } },
       lang: { equals: "ja" },
@@ -168,13 +175,7 @@ describe("buildWhere", () => {
   });
 
   test("drops colors and games that are not in the build's value set", () => {
-    expect(buildWhere({ colors: ["Q"], games: ["sega"] })).toEqual({
-      image_updated_at: { gte: DEFAULT_SINCE },
-    });
-  });
-
-  test("drops the default window as soon as a real filter exists", () => {
-    expect(buildWhere({ rarity: ["rare"] })).not.toHaveProperty("image_updated_at");
+    expect(buildWhere({ colors: ["Q"], games: ["sega"] })).toEqual({});
   });
 });
 
@@ -216,13 +217,14 @@ describe("buildOrderBy", () => {
   });
 });
 
-describe("titleCase", () => {
-  test("capitalises each word so lowercase queries match printed names", () => {
-    expect(titleCase("lightning bolt")).toBe("Lightning Bolt");
+describe("fold", () => {
+  test("lowercases and strips diacritics, like the build's fold normalizer", () => {
+    expect(fold("Lim-Dûl the Necromancer")).toBe("lim-dul the necromancer");
+    expect(fold("Jötun Grunt")).toBe("jotun grunt");
   });
 
-  test("leaves existing capitals intact", () => {
-    expect(titleCase("Sol Ring")).toBe("Sol Ring");
+  test("leaves ligatures alone, as the normalizer does", () => {
+    expect(fold("Æther Vial")).toBe("æther vial");
   });
 });
 

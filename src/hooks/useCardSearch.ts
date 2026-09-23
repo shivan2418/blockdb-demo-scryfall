@@ -6,7 +6,6 @@ export interface SearchState {
   status: "loading" | "ready" | "error";
   records: Card[];
   hasMore: boolean;
-  correctedCase: boolean;
   /** Approximate upper bound from `count()`; null until it arrives. */
   total: number | null;
   totalExact: boolean;
@@ -17,7 +16,6 @@ const INITIAL: SearchState = {
   status: "loading",
   records: [],
   hasMore: false,
-  correctedCase: false,
   total: null,
   totalExact: false,
   error: null,
@@ -48,7 +46,6 @@ export function useCardSearch(filters: CardFilters, sort: SortKey, page: number)
           status: "ready",
           records: result.records,
           hasMore: result.hasMore,
-          correctedCase: result.correctedCase,
           // The query often already knew the exact total — show it immediately and skip count()
           // entirely rather than replacing a true number with an inflated bound.
           total: result.total ?? null,
@@ -57,8 +54,7 @@ export function useCardSearch(filters: CardFilters, sort: SortKey, page: number)
         });
         if (result.total !== undefined) return;
 
-        // The applied set, not `filters` — see SearchResult.appliedFilters.
-        const { count, exact } = await countCards(result.appliedFilters);
+        const { count, exact } = await countCards(filters, sort);
         if (superseded()) return;
         setState((prev) => ({ ...prev, total: count, totalExact: exact }));
       } catch (error) {

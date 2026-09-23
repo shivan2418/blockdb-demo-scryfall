@@ -41,16 +41,13 @@ type DraftWhere = { -readonly [K in keyof CardWhere]: CardWhere[K] };
 export const PAGE_SIZE = 60;
 
 /**
- * A query downloads every shard it touches, whole — `limit` only trims the
- * result, it does not reduce fetching. An unfiltered browse would therefore
- * pull all 529 shards (~722 MB) just to fill one page.
- *
- * `image_updated_at` is the dataset's sort field, so a range on it is the one
- * filter that prunes to a contiguous handful of shards. This cutoff is the
- * newest ~1,500 cards (~7 shards) and stands in whenever the user has selected
- * nothing else.
+ * `name` is the dataset's sort field, so shards hold contiguous runs of names. A query ordered by
+ * name (or not ordered at all) walks shards from one end and stops once the page is full, which is
+ * what makes an unfiltered A–Z browse cheap. Any other order has to read every candidate shard
+ * before it knows the first page, so an unfiltered browse under such an order is narrowed to this
+ * one slice of the alphabet — a contiguous handful of shards instead of all 530.
  */
-export const DEFAULT_SINCE = "2026-07-13T13:14:30Z";
+export const DEFAULT_WINDOW = "A";
 
 /** One row of the advanced form's Stats section. `value` stays a string — power holds `*`. */
 export interface StatFilter {
@@ -106,20 +103,19 @@ export const SORT_LABELS: Record<SortKey, string> = {
   popular: "Most popular",
 };
 
-/** `"lightning bolt"` → `"Lightning Bolt"`, matching how card names are printed. */
-export function titleCase(value: string): string {
-  return value.replace(/\b\p{Ll}/gu, (char) => char.toUpperCase());
+/**
+ * The same folding the build's `fold` normalizer applies to the `*_fold` columns — lowercase with
+ * diacritics stripped — so `lim-dul` finds `Lim-Dûl`. The query has to be folded identically or the
+ * trigrams won't line up.
+ */
+export function fold(value: string): string {
+  return value.normalize("NFD").replace(/\p{M}/gu, "").normalize("NFC").toLowerCase();
 }
 
 const clean = (value: string | undefined): string | undefined => {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
 };
-
-/** True when nothing was selected, so the default-window filter is what will run. */
-export function isDefaultBrowse(filters: CardFilters): boolean {
-  return Object.keys(buildWhere(filters)).length === 1 && !hasAnyFilter(filters);
-}
 
 export function hasAnyFilter(filters: CardFilters): boolean {
   return Boolean(
@@ -229,23 +225,28 @@ function prunes(where: DraftWhere): boolean {
   );
 }
 
-export function buildWhere(filters: CardFilters): CardWhere {
+/** Sorts that match the shards' physical order, so a page can be filled without reading them all. */
+export const followsShardOrder = (sort: SortKey): boolean =>
+  sort === "relevance" || sort === "name" || sort === "name-desc";
+
+export function buildWhere(filters: CardFilters, sort: SortKey = "relevance"): CardWhere {
   const where: DraftWhere = {};
 
+  // Free text goes to the folded columns, so matching ignores case and accents.
   const name = clean(filters.name);
-  if (name) where.name = { contains: name };
+  if (name) where.name_fold = { contains: fold(name) };
 
   const type = clean(filters.type);
-  if (type) where.type_line = { contains: type };
+  if (type) where.type_line_fold = { contains: fold(type) };
 
   const text = clean(filters.text);
-  if (text) where.oracle_text = { contains: text };
+  if (text) where.oracle_text_fold = { contains: fold(text) };
 
   const artist = clean(filters.artist);
-  if (artist) where.artist = { contains: artist };
+  if (artist) where.artist_fold = { contains: fold(artist) };
 
   const flavor = clean(filters.flavor);
-  if (flavor) where.flavor_text = { contains: flavor };
+  if (flavor) where.flavor_text_fold = { contains: fold(flavor) };
 
   const manaCost = clean(filters.manaCost);
   if (manaCost) where.mana_cost = { equals: normalizeManaCost(manaCost) };
@@ -254,7 +255,7 @@ export function buildWhere(filters: CardFilters): CardWhere {
   if (set) where.set = { equals: set.toLowerCase() };
 
   const setName = clean(filters.setName);
-  if (setName) where.set_name = { contains: setName };
+  if (setName) where.set_name_fold = { contains: fold(setName) };
 
   const keyword = clean(filters.keyword);
   if (keyword) where.keywords = { some: keyword };
@@ -288,8 +289,13 @@ export function buildWhere(filters: CardFilters): CardWhere {
     }
   }
 
-  // Never leave the where unprunable — see DEFAULT_SINCE.
-  if (!prunes(where)) where.image_updated_at = { gte: DEFAULT_SINCE };
+  // Nothing prunes. In shard order an empty where is fine — the walk stops at the first page — but
+  // `not` riders can't stand alone, so they get an empty prefix: a sort-field range that admits every
+  // name. Any other order would read the whole dataset, so it's narrowed to DEFAULT_WINDOW.
+  if (!prunes(where)) {
+    if (!followsShardOrder(sort)) where.name = { startsWith: DEFAULT_WINDOW };
+    else if (Object.keys(where).length > 0) where.name = { startsWith: "" };
+  }
 
   return where;
 }
@@ -317,34 +323,9 @@ export function buildOrderBy(sort: SortKey): CardOrderBy | undefined {
   }
 }
 
-/** The `contains` filters — the case-sensitive ones, since the trigram index is not folded. */
-const TEXT_FILTERS = ["name", "type", "text", "artist", "flavor", "setName"] as const;
-
-/** Title-cases only the free-text filters, which are the case-sensitive ones. */
-function titleCaseFilters(filters: CardFilters): CardFilters {
-  const titleCased: CardFilters = { ...filters };
-  for (const key of TEXT_FILTERS) {
-    const value = filters[key];
-    if (value) titleCased[key] = titleCase(value);
-  }
-  return titleCased;
-}
-
-function hasTextFilter(filters: CardFilters): boolean {
-  return TEXT_FILTERS.some((key) => clean(filters[key]));
-}
-
 export interface SearchResult {
   records: Card[];
   hasMore: boolean;
-  /** Set when the literal query found nothing and the title-cased retry did. */
-  correctedCase: boolean;
-  /**
-   * The filters the returned records were actually fetched with — the title-cased set whenever
-   * `correctedCase`. Counting the caller's original filters instead would report 0 for exactly the
-   * queries the retry rescued, since the literal query is the one that matched nothing.
-   */
-  appliedFilters: CardFilters;
   /**
    * Exact match count, when the query already had to see every match — free, and vastly better than
    * `count()`'s zero-fetch upper bound (which reads ~35,000 for an artist with 396 cards). Absent
@@ -358,35 +339,24 @@ export async function searchCards(
   sort: SortKey,
   page: number,
 ): Promise<SearchResult> {
-  const run = (applied: CardFilters) =>
-    cards.findMany({
-      where: buildWhere(applied),
+  try {
+    return await cards.findMany({
+      where: buildWhere(filters, sort),
       orderBy: buildOrderBy(sort),
       limit: PAGE_SIZE,
       offset: page * PAGE_SIZE,
     });
-
-  try {
-    const result = await run(filters);
-    // `contains` is a case-sensitive substring test and the trigram index isn't
-    // case-normalized, so a lowercase query can't match Title Case card names.
-    // Retry once, title-cased, before reporting no results.
-    if (result.records.length === 0 && hasTextFilter(filters)) {
-      const titleCased = titleCaseFilters(filters);
-      const retried = await run(titleCased);
-      if (retried.records.length > 0) {
-        return { ...retried, correctedCase: true, appliedFilters: titleCased };
-      }
-    }
-    return { ...result, correctedCase: false, appliedFilters: filters };
   } catch (error) {
     throw friendlyError(error);
   }
 }
 
-export async function countCards(filters: CardFilters): Promise<{ count: number; exact: boolean }> {
+export async function countCards(
+  filters: CardFilters,
+  sort: SortKey,
+): Promise<{ count: number; exact: boolean }> {
   try {
-    return await cards.count(buildWhere(filters));
+    return await cards.count(buildWhere(filters, sort));
   } catch (error) {
     throw friendlyError(error);
   }
