@@ -88,6 +88,16 @@ h2 {
   text-align: center;
 }
 
+.app-footer p {
+  margin: 0 auto 6px;
+  max-width: 720px;
+}
+
+.app-footer a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 .link-button {
   appearance: none;
   background: transparent;

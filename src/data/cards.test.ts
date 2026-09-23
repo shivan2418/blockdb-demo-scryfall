@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { manaSymbols } from "./card-view";
+import { datasetDate } from "./collection";
 import {
   DEFAULT_SINCE,
   buildOrderBy,
@@ -312,5 +313,17 @@ describe("url state", () => {
 
   test("parses cmc back into numbers", () => {
     expect(decodeState(new URLSearchParams({ cmc: "0,3" })).filters.cmc).toEqual([0, 3]);
+  });
+});
+
+describe("datasetDate", () => {
+  test("reads the bulk file's UTC timestamp out of the collection key", () => {
+    expect(datasetDate("default-cards-20260721211623")?.toISOString()).toBe(
+      "2026-07-21T21:16:23.000Z",
+    );
+  });
+
+  test("is undefined when the key carries no timestamp", () => {
+    expect(datasetDate("default-cards")).toBeUndefined();
   });
 });
